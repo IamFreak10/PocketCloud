@@ -46,17 +46,17 @@ graph TB
         SVC_DB["PostgreSQL / SQLite Database"]
     end
 
-    ClientUI -->|Tauri Commands| IPC_Cmd
-    IPC_Cmd -->|Async Execution| RustCore
-    RustCore -->|Event Broadcast| IPC_Events
+    ClientUI -->|"Tauri Commands"| IPC_Cmd
+    IPC_Cmd -->|"Async Execution"| RustCore
+    RustCore -->|"Event Broadcast"| IPC_Events
     IPC_Events --> ClientUI
 
-    DOCKER -->|Container Lifecycle & Exec| VPS_Node
-    GATEWAY -->|Virtual Host Reverse Proxy| VPS_Node
-    DNS -->|A-Record Routing| GATEWAY
-    UI_Browser -->|HTTP Traffic (:18080/browse)| GATEWAY
-    UI_Term -->|Interactive Exec Stream| DOCKER
-    DB -->|Schema & State Store| RustCore
+    DOCKER -->|"Container Lifecycle & Exec"| VPS_Node
+    GATEWAY -->|"Virtual Host Reverse Proxy"| VPS_Node
+    DNS -->|"A-Record Routing"| GATEWAY
+    UI_Browser -->|"HTTP Loopback Tunneling"| GATEWAY
+    UI_Term -->|"Interactive Exec Stream"| DOCKER
+    DB -->|"Schema & State Store"| RustCore
 
     VPS_Node --> SVC_Nginx
     SVC_Nginx --> SVC_Node
