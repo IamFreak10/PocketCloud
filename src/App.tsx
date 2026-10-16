@@ -13,7 +13,7 @@ import { DnsManagerView } from './components/DnsManagerView';
 import { NetworkTesterView } from './components/NetworkTesterView';
 import { MissionsView } from './components/MissionsView';
 import { SettingsView } from './components/SettingsView';
-import { Lab, SystemCapabilities } from './types';
+import { Lab, LabComponent, SystemCapabilities } from './types';
 import { api } from './services/api';
 
 export function App() {
@@ -131,6 +131,30 @@ export function App() {
     }
   };
 
+  const handleAddComponent = async (
+    labId: string,
+    name: string,
+    componentType: string,
+    image: string,
+    hostPort?: number,
+    containerPort?: number
+  ): Promise<LabComponent> => {
+    try {
+      const comp = await api.addComponent(labId, name, componentType, image, hostPort, containerPort);
+      setLabs((prev) =>
+        prev.map((l) => (l.id === labId ? { ...l, components: [...l.components, comp] } : l))
+      );
+      if (currentLab?.id === labId) {
+        setCurrentLab((prev) => (prev ? { ...prev, components: [...prev.components, comp] } : null));
+      }
+      showToast(`Added ${name} to lab!`);
+      return comp;
+    } catch (err: unknown) {
+      showToast(`Failed to add: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
+    }
+  };
+
   const handleOpenTerminalForComponent = (compId: string) => {
     setSelectedComponentId(compId);
     setCurrentTab('terminal');
@@ -160,8 +184,14 @@ export function App() {
               capabilities={capabilities}
               onQuickStart={(tmpl) =>
                 handleCreateLab(
-                  tmpl === 'vps-web' ? 'Full Stack Linux Lab' : 'Custom Cloud Lab',
-                  'Dedicated container playground environment',
+                  tmpl === 'ubuntu-vps'
+                    ? 'Ubuntu 24.04 LTS Cloud Lab'
+                    : tmpl === 'vps-web'
+                    ? 'Full Stack Linux Lab'
+                    : 'Custom Cloud Lab',
+                  tmpl === 'ubuntu-vps'
+                    ? 'Dedicated official Ubuntu 24.04 LTS environment with full Bash shell and apt'
+                    : 'Dedicated container playground environment',
                   tmpl
                 )
               }
@@ -181,6 +211,7 @@ export function App() {
               currentLab={currentLab}
               onSelectLab={setCurrentLab}
               onCreateLab={handleCreateLab}
+              onAddComponent={handleAddComponent}
               onStartComponent={handleStartComponent}
               onStopComponent={handleStopComponent}
               onOpenTerminal={handleOpenTerminalForComponent}

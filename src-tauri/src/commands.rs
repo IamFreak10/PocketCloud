@@ -140,6 +140,22 @@ pub async fn create_lab(
                 target_port: 80,
                 host_port: 18081,
             });
+        } else if tmpl == "ubuntu" || tmpl == "ubuntu-vps" {
+            let vps_id = format!("vps-{}", &Uuid::new_v4().to_string()[..6]);
+            components.push(LabComponent {
+                id: vps_id.clone(),
+                lab_id: lab_id.clone(),
+                name: "Ubuntu 24.04 LTS VPS Node".to_string(),
+                component_type: "vps".to_string(),
+                runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+                image: "ubuntu:24.04".to_string(),
+                status: "stopped".to_string(),
+                container_id: None,
+                ip_address: None,
+                host_port: Some(18022),
+                container_port: Some(22),
+                created_at: now.clone(),
+            });
         }
     }
 
@@ -185,6 +201,8 @@ pub async fn start_component(
             None
         } else if comp.component_type == "web" {
             None // Nginx runs its default CMD
+        } else if comp.image.contains("ubuntu") {
+            Some(vec!["bash".to_string()])
         } else {
             Some(vec!["sh".to_string()])
         };
@@ -286,6 +304,45 @@ pub async fn stop_component(
 
     Ok(comp)
 }
+
+#[tauri::command]
+pub async fn add_component(
+    state: State<'_, AppState>,
+    lab_id: String,
+    name: String,
+    component_type: String,
+    image: String,
+    host_port: Option<u16>,
+    container_port: Option<u16>,
+) -> Result<LabComponent, String> {
+    let labs = state.db.list_labs().map_err(|e| e.to_string())?;
+    let mut lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+
+    let is_docker = state.docker.is_available();
+    let comp_id = format!("{}-{}", component_type, &Uuid::new_v4().to_string()[..6]);
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let comp = LabComponent {
+        id: comp_id,
+        lab_id: lab_id.clone(),
+        name,
+        component_type,
+        runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+        image,
+        status: "stopped".to_string(),
+        container_id: None,
+        ip_address: None,
+        host_port,
+        container_port,
+        created_at: now,
+    };
+
+    lab.components.push(comp.clone());
+    state.db.save_lab(&lab).map_err(|e| e.to_string())?;
+
+    Ok(comp)
+}
+
 
 #[tauri::command]
 pub async fn exec_command(

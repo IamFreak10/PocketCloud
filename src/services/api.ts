@@ -94,6 +94,44 @@ export const api = {
     return newLab;
   },
 
+  async addComponent(
+    labId: string,
+    name: string,
+    componentType: string,
+    image: string,
+    hostPort?: number,
+    containerPort?: number
+  ): Promise<LabComponent> {
+    if (isTauri) {
+      return await invoke<LabComponent>('add_component', {
+        labId,
+        name,
+        componentType,
+        image,
+        hostPort,
+        containerPort,
+      });
+    }
+    const labs = await this.listLabs();
+    const lab = labs.find((l) => l.id === labId);
+    if (!lab) throw new Error('Lab not found');
+    const comp: LabComponent = {
+      id: `${componentType}-${Math.random().toString(36).substring(2, 8)}`,
+      lab_id: labId,
+      name,
+      component_type: componentType as any,
+      runtime_mode: 'docker',
+      image,
+      status: 'stopped',
+      host_port: hostPort,
+      container_port: containerPort,
+      created_at: new Date().toISOString(),
+    };
+    lab.components.push(comp);
+    localStorage.setItem('netlab_labs', JSON.stringify(labs));
+    return comp;
+  },
+
   async startComponent(labId: string, componentId: string): Promise<LabComponent> {
     if (isTauri) {
       return await invoke<LabComponent>('start_component', { labId, componentId });

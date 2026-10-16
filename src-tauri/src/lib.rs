@@ -49,6 +49,7 @@ pub fn run() {
             commands::get_capabilities,
             commands::list_labs,
             commands::create_lab,
+            commands::add_component,
             commands::start_component,
             commands::stop_component,
             commands::exec_command,
