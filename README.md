@@ -212,6 +212,26 @@ npm run tauri dev
 
 ---
 
+## 🗺️ Known Challenges & Roadmap
+
+PocketCloud is actively evolving! We have cataloged all current architectural challenges, open bugs, and planned capabilities in our **[ROADMAP_AND_ISSUES.md](ROADMAP_AND_ISSUES.md)** document, including:
+- 💻 **True Interactive PTY Terminal**: Full support for `nano`, `vim`, `htop`, and interactive prompts.
+- ⚡ **Host Port Conflict Detection**: Automatic pre-flight port probes and bridge fallback for occupied ports.
+- 🔒 **Self-Signed SSL Support**: Local certificate testing inside the Built-in Browser.
+- 🖥️ **Adaptive Docker Socket Discovery**: Seamless cross-platform support for macOS and Windows (WSL2).
+- 🌐 **Isolated Multi-Node Lab Bridge Networks**: Inter-container private networking with dynamic subnetting.
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Whether you're fixing a bug, adding new software store packages, or improving documentation:
+1. Check out our **[CONTRIBUTING.md](CONTRIBUTING.md)** guide.
+2. Pick an open task from **[ROADMAP_AND_ISSUES.md](ROADMAP_AND_ISSUES.md)** or browse GitHub Issues.
+3. Submit a Pull Request and join our community!
+
+---
+
 ## 🛡️ License
 
 This project is licensed under the [MIT License](LICENSE). Built with ❤️ by [IamFreak10](https://github.com/IamFreak10).
