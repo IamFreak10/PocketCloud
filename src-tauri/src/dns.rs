@@ -48,20 +48,24 @@ impl DnsEngine {
     pub async fn probe(&self, domain: &str) -> NetworkProbeResult {
         let start = Instant::now();
         let cleaned = domain.trim().to_lowercase();
-        let stripped = cleaned
+        let host_part = cleaned
             .trim_start_matches("http://")
             .trim_start_matches("https://")
             .split('/')
             .next()
-            .unwrap_or("")
-            .split(':')
-            .next()
             .unwrap_or("");
+
+        let (stripped, explicit_port) = if let Some((h, p_str)) = host_part.split_once(':') {
+            (h, p_str.parse::<u16>().ok())
+        } else {
+            (host_part, None)
+        };
 
         let record = self.resolve(stripped);
 
-        if let Some(rec) = record {
-            let host_port = rec.host_port;
+        let target_port_opt = explicit_port.or_else(|| record.as_ref().map(|r| r.host_port));
+
+        if let Some(host_port) = target_port_opt {
             let target_addr = format!("127.0.0.1:{}", host_port);
 
             let is_open = match TcpStream::connect(&target_addr).await {
@@ -71,9 +75,12 @@ impl DnsEngine {
 
             let latency = start.elapsed().as_millis() as u64;
 
+            let ttl = record.as_ref().map(|r| r.ttl).unwrap_or(60);
+            let rec_type = record.as_ref().map(|r| r.record_type.clone()).unwrap_or_else(|| "DIRECT".to_string());
+
             let mut headers = HashMap::new();
             headers.insert("X-NetLab-DNS-Status".to_string(), "NOERROR (Resolved)".to_string());
-            headers.insert("X-NetLab-TTL".to_string(), format!("{}s", rec.ttl));
+            headers.insert("X-NetLab-TTL".to_string(), format!("{}s", ttl));
             headers.insert("X-NetLab-Target-Port".to_string(), host_port.to_string());
 
             let (http_status, diagnostics) = if is_open {
@@ -81,14 +88,14 @@ impl DnsEngine {
                     Some(200),
                     format!(
                         "DNS NOERROR: Domain '{}' successfully resolved to 127.0.0.1:{} (Type: {}). Internal port is active and responding.",
-                        stripped, host_port, rec.record_type
+                        stripped, host_port, rec_type
                     ),
                 )
             } else {
                 (
                     Some(502),
                     format!(
-                        "DNS NOERROR, but Connection Refused on 127.0.0.1:{}. The DNS record exists, but the target container or web service is not running or not listening on this port.",
+                        "DNS NOERROR, but Connection Refused on 127.0.0.1:{}. The target container or web service is not running or not listening on this port.",
                         host_port
                     ),
                 )
