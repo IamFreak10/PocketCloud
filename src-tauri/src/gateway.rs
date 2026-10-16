@@ -193,7 +193,7 @@ async fn dashboard_handler(State(state): State<GatewayState>) -> Html<String> {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NetLab Host-Browser Gateway</title>
+    <title>PocketCloud Host-Browser Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen p-8">
@@ -201,7 +201,7 @@ async fn dashboard_handler(State(state): State<GatewayState>) -> Html<String> {
         <header class="flex items-center justify-between pb-6 border-b border-gray-800 mb-8">
             <div>
                 <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    NetLab Host-Browser Gateway
+                    PocketCloud Host-Browser Gateway
                 </h1>
                 <p class="text-gray-400 mt-1">Local Loopback Bridge (127.0.0.1:18080)</p>
             </div>

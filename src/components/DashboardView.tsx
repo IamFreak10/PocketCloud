@@ -45,7 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Build, Deploy & Simulate Real Hosting on Your PC
           </h1>
           <p className="text-sm text-gray-400 leading-relaxed mb-6">
-            NetLab gives you isolated Linux containers, visual network topologies, web servers, real databases,
+            PocketCloud gives you isolated Linux containers, visual network topologies, web servers, real databases,
             and an internal virtual Internet without renting public VPS or cloud infrastructure.
           </p>
           <div className="flex items-center gap-3 flex-wrap">

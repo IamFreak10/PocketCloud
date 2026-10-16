@@ -1,4 +1,4 @@
-# 🌐 NetLab — High-Performance Local Cloud & VPS Simulation Engine
+# ☁️ PocketCloud — Zero-Cost Private Cloud & Full VPS Sandbox on Your Desktop
 
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2.0-blue?logo=tauri&logoColor=white)](https://tauri.app/)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
@@ -7,13 +7,13 @@
 [![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**NetLab** is an ultra-fast, lightweight, desktop-native cloud sandbox and networking laboratory built with **Tauri v2**, **Rust**, and **React 19**. It enables developers, DevOps practitioners, and system architects to spin up full **Ubuntu 24.04 LTS VPS instances**, orchestrate isolated microservices, configure real reverse proxies and authoritative DNS networks, and inspect traffic—all locally on their workstations with zero cloud costs.
+**PocketCloud** is an ultra-fast, lightweight, desktop-native cloud sandbox and DevOps laboratory built with **Tauri v2**, **Rust**, and **React 19**. It enables developers, DevOps engineers, and system architects to spin up full **Ubuntu 24.04 LTS VPS instances**, orchestrate isolated microservices, configure real reverse proxies and authoritative DNS networks, and inspect traffic—all locally on their workstations with zero cloud costs.
 
 ---
 
 ## 🏛️ System Architecture Overview
 
-NetLab employs a decoupled, multi-tier reactive architecture that unifies systems-level Rust performance with modern web-based UI ergonomics.
+PocketCloud employs a decoupled, multi-tier reactive architecture that unifies systems-level Rust performance with modern web-based UI ergonomics.
 
 ```mermaid
 graph TB
@@ -122,7 +122,7 @@ graph TB
 ## 📂 Codebase Directory Structure
 
 ```text
-netlab/
+pocketcloud/
 ├── src/                               # Frontend Presentation Layer (React 19 + TypeScript)
 │   ├── components/                    # UI Component Library
 │   │   ├── BuiltinBrowserView.tsx     # In-app Web Browser with Gateway Tunneling
@@ -173,21 +173,21 @@ netlab/
 ### Installation & Local Run
 ```bash
 # 1. Clone the repository
-git clone https://github.com/IamFreak10/netlab.git
-cd netlab
+git clone https://github.com/IamFreak10/PocketCloud.git
+cd PocketCloud
 
 # 2. Install JavaScript dependencies
 npm install
 
-# 3. Launch NetLab in Development Mode
+# 3. Launch PocketCloud in Development Mode
 npm run tauri dev
 ```
 
 ---
 
-## 🛠️ Typical Workflow: Deploying a Full-Stack App in NetLab
+## 🛠️ Typical Workflow: Deploying a Full-Stack App in PocketCloud
 
-1. **Launch VPS**: Click **Launch Ubuntu 24.04 VPS** on the dashboard. NetLab initializes an Ubuntu 24.04 container with SSH on `18023`.
+1. **Launch VPS**: Click **Launch Ubuntu 24.04 VPS** on the dashboard. PocketCloud initializes an Ubuntu 24.04 container with SSH on `18023`.
 2. **Install Stack**: Open **VPS Control Suite** &gt; **Software Store** &gt; Click **Install** on **Nginx**, **Node.js LTS**, and **PM2**.
 3. **Deploy Code**: Use the **Terminal** tab to clone your repository (or use the built-in GitHub Deployer):
    ```bash
@@ -208,7 +208,7 @@ npm run tauri dev
    ln -sf /etc/nginx/sites-available/myproject /etc/nginx/sites-enabled/
    service nginx restart
    ```
-5. **Preview in Built-in Browser**: Open the **Built-in Browser** tab and navigate to `http://myproject.test`. NetLab Gateway intercepts the request, maps the domain, and renders your application in real-time.
+5. **Preview in Built-in Browser**: Open the **Built-in Browser** tab and navigate to `http://myproject.test`. PocketCloud Gateway intercepts the request, maps the domain, and renders your application in real-time.
 
 ---
 

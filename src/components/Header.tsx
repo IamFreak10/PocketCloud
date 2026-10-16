@@ -16,12 +16,12 @@ export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xl tracking-tight text-white">NetLab</span>
+            <span className="font-extrabold text-xl tracking-tight text-white">PocketCloud</span>
             <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">
               v0.1.0-alpha
             </span>
           </div>
-          <p className="text-xs text-gray-400">Your Own Cloud. Your Own Internet. Right on Your PC.</p>
+          <p className="text-xs text-gray-400">Zero-Cost Private Cloud & Full VPS Sandbox on Your Desktop</p>
         </div>
       </div>
 
