@@ -221,6 +221,7 @@ impl DockerManager {
             exit_code,
             stdout,
             stderr,
+            cwd: None,
         })
     }
 

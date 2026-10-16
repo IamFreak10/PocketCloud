@@ -55,6 +55,8 @@ pub struct ExecResult {
     pub exit_code: i64,
     pub stdout: String,
     pub stderr: String,
+    #[serde(default)]
+    pub cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

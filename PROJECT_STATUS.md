@@ -22,8 +22,8 @@ Every feature in NetLab is rigorously classified into one of four states based o
 
 | Module | Feature | Status | Execution Environment | Verifiable Evidence |
 |--------|---------|--------|-----------------------|---------------------|
-| **C: VPS & Terminal** | Real Linux Terminal & Command Execution | **Real & Implemented** | Docker `alpine:latest` | Automated test `test_real_docker_vps_and_nginx_e2e`: executed `uname -a`, `whoami` (root), `cat /etc/os-release`, created `/tmp/netlab-test/test.txt` and verified content & exit code 0 |
-| **C: VPS & Terminal** | In-Memory Virtual Shell Fallback | **Simulated** | Rust In-Memory VFS | Automated test `test_simulator_execution` verifies virtual command parsing for non-Docker hosts |
+| **C: VPS & Terminal** | Authentic Ubuntu 24.04 Terminal & Session State | **Real & Implemented** | Docker `ubuntu:24.04` & Alpine | Verified interactive bash typing, persistent working directory (`cwd`), authentic Ubuntu prompt (`root@ubuntu-24:~#` -> `root@ubuntu-24:/home#` -> `root@ubuntu-24:/#`), multi-column colored `ls`, cursor navigation, Tab completion, and history |
+| **C: VPS & Terminal** | In-Memory Virtual Shell Fallback | **Simulated** | Rust In-Memory VFS | Automated test `test_simulator_execution` verifies virtual command parsing and directory tracking for non-Docker hosts |
 | **E: Web Servers** | Nginx Container & Live VirtualHosts | **Real & Implemented** | Docker `nginx:alpine` | Container booted on port 18081/18092; automated test verified live syntax check via `nginx -t` and reload via `nginx -s reload` |
 | **E: Web Servers** | Syntax Validation (`nginx -t`) | **Real & Implemented** | Live Container CLI | `validate_and_reload_nginx` writes `/etc/nginx/nginx.conf` or `/etc/nginx/conf.d/default.conf` and captures real stdout/stderr |
 | **I: Virtual DNS** | Authoritative Virtual DNS Engine | **Real & Implemented** | Rust `DnsEngine` + Axum | `test_dns_resolution_and_probe`: resolves A and CNAME records (e.g. `shop.test -> 127.0.0.1:18081`), returns authoritative answers, handles TTL and NXDOMAIN |

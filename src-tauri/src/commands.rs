@@ -365,25 +365,51 @@ pub async fn exec_command(
     component_id: String,
     command: String,
     runtime_mode: String,
+    cwd: Option<String>,
 ) -> Result<ExecResult, String> {
+    let initial_cwd = cwd.unwrap_or_else(|| "/root".to_string());
+
     if runtime_mode == "docker" {
         let labs = state.db.list_labs().map_err(|e| e.to_string())?;
         for lab in labs {
             for comp in lab.components {
                 if comp.id == component_id {
                     if let Some(cid) = comp.container_id {
-                        return state
+                        let is_ubuntu = comp.image.contains("ubuntu");
+                        let shell = if is_ubuntu { "bash" } else { "sh" };
+
+                        let script = format!(
+                            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true; {}
+__NETLAB_EXIT_CODE=$?
+echo ""
+echo "__NETLAB_CWD__:$(pwd)"
+exit $__NETLAB_EXIT_CODE"#,
+                            initial_cwd, command
+                        );
+
+                        let mut res = state
                             .docker
-                            .exec_command(&cid, vec!["sh", "-c", &command])
-                            .await;
+                            .exec_command(&cid, vec![shell, "-c", &script])
+                            .await?;
+
+                        if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {
+                            let (out, marker) = res.stdout.split_at(pos);
+                            let marker_line = marker.lines().next().unwrap_or("");
+                            let new_cwd = marker_line.trim_start_matches("__NETLAB_CWD__:").trim();
+                            res.cwd = Some(new_cwd.to_string());
+                            res.stdout = out.trim_end().to_string();
+                        } else {
+                            res.cwd = Some(initial_cwd);
+                        }
+
+                        return Ok(res);
                     }
                 }
             }
         }
         Err("Active container not found for component".to_string())
     } else {
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        Ok(state.simulator.exec_command(&component_id, &parts))
+        Ok(state.simulator.exec_command_with_cwd(&component_id, &command, &initial_cwd))
     }
 }
 

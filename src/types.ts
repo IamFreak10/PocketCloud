@@ -48,6 +48,7 @@ export interface ExecResult {
   exit_code: number;
   stdout: string;
   stderr: string;
+  cwd?: string;
 }
 
 export interface DnsRecord {

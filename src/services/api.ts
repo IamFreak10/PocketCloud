@@ -163,14 +163,94 @@ export const api = {
     return comp;
   },
 
-  async execCommand(componentId: string, command: string, runtimeMode: string): Promise<ExecResult> {
+  async execCommand(
+    componentId: string,
+    command: string,
+    runtimeMode: string,
+    cwd?: string
+  ): Promise<ExecResult> {
     if (isTauri) {
-      return await invoke<ExecResult>('exec_command', { componentId, command, runtimeMode });
+      return await invoke<ExecResult>('exec_command', {
+        componentId,
+        command,
+        runtimeMode,
+        cwd: cwd || '/root',
+      });
     }
+
+    const currentCwd = cwd || '/root';
+    const trimmed = command.trim();
+    const parts = trimmed.split(/\s+/);
+    const mainCmd = parts[0];
+
+    if (mainCmd === 'cd') {
+      const target = parts[1] || '/root';
+      let newDir = currentCwd;
+      if (target === '~' || !target) {
+        newDir = '/root';
+      } else if (target === '/') {
+        newDir = '/';
+      } else if (target === '..') {
+        if (currentCwd === '/') {
+          newDir = '/';
+        } else {
+          const segs = currentCwd.split('/').filter(Boolean);
+          segs.pop();
+          newDir = segs.length ? '/' + segs.join('/') : '/';
+        }
+      } else if (target.startsWith('/')) {
+        newDir = target;
+      } else {
+        newDir = currentCwd === '/' ? '/' + target : currentCwd + '/' + target;
+      }
+      return { exit_code: 0, stdout: '', stderr: '', cwd: newDir };
+    }
+
+    if (mainCmd === 'pwd') {
+      return { exit_code: 0, stdout: `${currentCwd}\n`, stderr: '', cwd: currentCwd };
+    }
+
+    if (mainCmd === 'whoami') {
+      return { exit_code: 0, stdout: 'root\n', stderr: '', cwd: currentCwd };
+    }
+
+    if (mainCmd === 'uname' || trimmed === 'uname -a') {
+      return {
+        exit_code: 0,
+        stdout: 'Linux ubuntu-24 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 Linux\n',
+        stderr: '',
+        cwd: currentCwd,
+      };
+    }
+
+    if (mainCmd === 'ls' || mainCmd === 'll' || mainCmd === 'la') {
+      let stdout = '';
+      if (currentCwd === '/') {
+        stdout = '\x1b[01;34mbin\x1b[0m   \x1b[01;34mdev\x1b[0m  \x1b[01;34mhome\x1b[0m  \x1b[01;34mlib64\x1b[0m  \x1b[01;34mmnt\x1b[0m  \x1b[01;34mproc\x1b[0m  \x1b[01;34mrun\x1b[0m   \x1b[01;34msrv\x1b[0m  \x1b[01;34mtmp\x1b[0m  \x1b[01;34mvar\x1b[0m\n\x1b[01;34mboot\x1b[0m  \x1b[01;34metc\x1b[0m  \x1b[01;34mlib\x1b[0m   \x1b[01;34mmedia\x1b[0m  \x1b[01;34mopt\x1b[0m  \x1b[01;34mroot\x1b[0m  \x1b[01;34msbin\x1b[0m  \x1b[01;34msys\x1b[0m  \x1b[01;34musr\x1b[0m\n';
+      } else if (currentCwd === '/home') {
+        stdout = '\x1b[01;34mubuntu\x1b[0m\n';
+      } else if (currentCwd === '/etc') {
+        stdout = 'hostname  \x1b[01;34mnginx\x1b[0m  os-release  resolv.conf\n';
+      } else {
+        stdout = 'test.txt  config.json\n';
+      }
+      return { exit_code: 0, stdout, stderr: '', cwd: currentCwd };
+    }
+
+    if (trimmed === 'cat /etc/os-release') {
+      return {
+        exit_code: 0,
+        stdout: 'NAME="Ubuntu"\nVERSION="24.04 LTS (Noble Numbat)"\nID=ubuntu\nVERSION_ID="24.04"\nPRETTY_NAME="Ubuntu 24.04 LTS"\nVERSION_CODENAME=noble\n',
+        stderr: '',
+        cwd: currentCwd,
+      };
+    }
+
     return {
       exit_code: 0,
-      stdout: `[Simulated Exec on ${componentId}]: ${command}\nLinux netlab-vps 6.8.0 #1 SMP\n`,
+      stdout: `Executed '${command}' in ${currentCwd}\n`,
       stderr: '',
+      cwd: currentCwd,
     };
   },
 
