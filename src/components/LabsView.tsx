@@ -153,7 +153,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
             onClick={handleQuickLaunchUbuntu}
             disabled={actionLoading === 'quick-ubuntu'}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-orange-950 transition cursor-pointer disabled:opacity-50"
-            title="Immediately start a real Ubuntu 24.04 LTS container and open terminal"
+            title="Download and boot an official Ubuntu 24.04 VM, then open its terminal"
           >
             <Zap className={`w-4 h-4 ${actionLoading === 'quick-ubuntu' ? 'animate-spin' : ''}`} />
             <span>Launch Ubuntu 24.04 VPS</span>
@@ -277,7 +277,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
                       <td className="p-4 uppercase text-gray-400 font-mono text-[11px]">{comp.component_type}</td>
                       <td className="p-4">
                         <span className="px-2 py-0.5 rounded text-[11px] bg-gray-800 text-gray-300 font-sans">
-                          {comp.runtime_mode === 'docker' ? 'Docker Engine' : 'Simulated'}
+                          {comp.runtime_mode === 'qemu' ? 'QEMU Virtual Machine' : comp.runtime_mode === 'docker' ? 'Docker Engine' : 'Simulated'}
                         </span>
                       </td>
                       <td className="p-4">

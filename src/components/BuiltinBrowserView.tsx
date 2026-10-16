@@ -108,6 +108,10 @@ export const BuiltinBrowserView: React.FC<BuiltinBrowserViewProps> = ({
     if (currentUrl.includes(`127.0.0.1:${gatewayPort}`)) {
       return currentUrl;
     }
+    // Direct localhost/127.0.0.1 ports (like http://localhost:5173 or 127.0.0.1:5173) can render natively!
+    if (currentUrl.includes('localhost:') || currentUrl.includes('127.0.0.1:')) {
+      return currentUrl.startsWith('http') ? currentUrl : `http://${currentUrl}`;
+    }
     return `${gatewayBase}/browse?url=${encodeURIComponent(currentUrl)}`;
   };
 

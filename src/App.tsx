@@ -40,12 +40,13 @@ export function App() {
         setLabs(fetchedLabs);
         setCurrentLab(fetchedLabs[0]);
       } else {
-        // Automatically create initial starter lab
+        // A fresh installation must start with the real Ubuntu VM path, never a
+        // simulated shell presented as Ubuntu.
         try {
           const starter = await api.createLab(
-            'Linux VPS & Web Server Lab',
-            'Starter playground containing an isolated Alpine Linux VPS and Nginx Web Server',
-            'vps-web'
+            'Ubuntu 24.04 LTS Cloud Lab',
+            'Official Ubuntu 24.04 VM with its own QEMU virtual disk and guest kernel',
+            'ubuntu-vps'
           );
           setLabs([starter]);
           setCurrentLab(starter);
@@ -83,7 +84,8 @@ export function App() {
             : null
         );
       }
-      showToast(`Started ${updatedComp.name} (${updatedComp.runtime_mode === 'docker' ? 'Real Container' : 'Simulated'})`);
+      const runtime = updatedComp.runtime_mode === 'qemu' ? 'Real Ubuntu VM' : updatedComp.runtime_mode === 'docker' ? 'Real Container' : 'Simulated';
+      showToast(`Started ${updatedComp.name} (${runtime})`);
     } catch (err: unknown) {
       showToast(`Failed to start: ${err instanceof Error ? err.message : String(err)}`);
     }

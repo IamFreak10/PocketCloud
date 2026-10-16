@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
           <ShieldCheck className={`w-4 h-4 ${capabilities?.docker_available ? 'text-emerald-400' : 'text-amber-400'}`} />
           <span className="text-gray-400">Docker:</span>
           <span className={`font-semibold ${capabilities?.docker_available ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {capabilities?.docker_available ? capabilities.docker_version : 'Simulated'}
+            {capabilities?.docker_available ? capabilities.docker_version : 'Unavailable'}
           </span>
         </div>
 
