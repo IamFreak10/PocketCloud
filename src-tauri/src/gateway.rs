@@ -21,7 +21,7 @@ pub struct GatewayState {
 }
 
 pub struct HostGateway {
-    state: GatewayState,
+    pub state: GatewayState,
     port: u16,
 }
 
@@ -40,6 +40,11 @@ impl HostGateway {
     pub fn register_route(&self, domain: &str, host_port: u16) {
         let mut routes = self.state.routes.write().unwrap();
         routes.insert(domain.to_lowercase(), host_port);
+    }
+
+    pub fn unregister_route(&self, domain: &str) {
+        let mut routes = self.state.routes.write().unwrap();
+        routes.remove(&domain.to_lowercase());
     }
 
     pub fn register_component(&self, component_id: &str, host_port: u16) {
@@ -84,21 +89,33 @@ async fn browse_handler(
         .trim_start_matches("http://")
         .trim_start_matches("https://");
     let mut parts = cleaned.splitn(2, '/');
-    let domain = parts.next().unwrap_or("").split(':').next().unwrap_or("").to_lowercase();
+    let host_part = parts.next().unwrap_or("");
     let uri_path = format!("/{}", parts.next().unwrap_or(""));
 
-    // 1. Resolve via DNS Engine or Routes without holding lock across await
-    let resolved_port = {
-        if let Some(record) = state.dns.resolve(&domain) {
-            Some(record.host_port)
-        } else {
-            let routes = state.routes.read().unwrap();
-            routes.get(&domain).cloned()
-        }
+    let (domain, explicit_port) = if let Some((d, p_str)) = host_part.split_once(':') {
+        (d.to_lowercase(), p_str.parse::<u16>().ok())
+    } else {
+        (host_part.to_lowercase(), None)
+    };
+
+    // 1. Resolve via explicit port, DNS Engine, or Routes without holding lock across await
+    let resolved_port = if let Some(port) = explicit_port {
+        Some(port)
+    } else if let Some(record) = state.dns.resolve(&domain) {
+        Some(record.host_port)
+    } else {
+        let routes = state.routes.read().unwrap();
+        routes.get(&domain).cloned().or_else(|| {
+            if domain.ends_with(".test") || domain == "localhost" || domain == "127.0.0.1" {
+                Some(8080)
+            } else {
+                None
+            }
+        })
     };
 
     if let Some(host_port) = resolved_port {
-        let mut res = forward_to_port(host_port, &uri_path).await;
+        let mut res = forward_to_port(host_port, &uri_path, &domain).await;
         res.headers_mut().insert("X-NetLab-DNS-Resolved", domain.parse().unwrap());
         res.headers_mut().insert("X-NetLab-Target-Port", host_port.to_string().parse().unwrap());
         res.headers_mut().insert("Access-Control-Allow-Origin", "*".parse().unwrap());
@@ -244,7 +261,7 @@ async fn dashboard_handler(State(state): State<GatewayState>) -> Html<String> {
 async fn component_proxy_handler(
     Path((_component_id, port)): Path<(String, u16)>,
 ) -> axum::response::Response {
-    forward_to_port(port, "/").await
+    forward_to_port(port, "/", "127.0.0.1").await
 }
 
 async fn dynamic_host_handler(
@@ -265,12 +282,18 @@ async fn dynamic_host_handler(
             Some(record.host_port)
         } else {
             let routes = state.routes.read().unwrap();
-            routes.get(&domain).cloned()
+            routes.get(&domain).cloned().or_else(|| {
+                if domain.ends_with(".test") || domain == "localhost" || domain == "127.0.0.1" {
+                    Some(8080)
+                } else {
+                    None
+                }
+            })
         }
     };
 
     if let Some(port) = target_port {
-        forward_to_port(port, uri_path).await
+        forward_to_port(port, uri_path, &domain).await
     } else {
         let error_html = format!(
             r#"<!DOCTYPE html><html><head><title>502 Bad Gateway / NXDOMAIN</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-slate-950 text-slate-200 p-8 flex items-center justify-center min-h-screen"><div class="bg-slate-900 border border-slate-800 p-6 rounded-xl max-w-md"><h1 class="text-xl font-bold text-rose-400 mb-2">502 Bad Gateway / Route Not Found</h1><p class="text-xs text-slate-400 mb-4">Domain <code>{}</code> is not mapped to any running lab component in NetLab.</p><a href="/" class="text-cyan-400 text-xs hover:underline">&larr; View Active Routes on NetLab Gateway</a></div></body></html>"#,
@@ -288,10 +311,8 @@ async fn dynamic_host_handler(
     }
 }
 
-async fn forward_to_port(port: u16, path: &str) -> axum::response::Response {
-    let target_url = format!("http://127.0.0.1:{}{}", port, path);
-
-    match reqwest_stream_fetch(&target_url).await {
+async fn forward_to_port(port: u16, path: &str, host_header: &str) -> axum::response::Response {
+    match reqwest_stream_fetch(port, path, host_header).await {
         Ok((status, content_type, body_bytes)) => {
             let ct = content_type.unwrap_or_else(|| "text/html; charset=utf-8".to_string());
             (
@@ -322,22 +343,18 @@ async fn forward_to_port(port: u16, path: &str) -> axum::response::Response {
     }
 }
 
-async fn reqwest_stream_fetch(url: &str) -> Result<(StatusCode, Option<String>, Vec<u8>), String> {
+async fn reqwest_stream_fetch(port: u16, path: &str, host_header: &str) -> Result<(StatusCode, Option<String>, Vec<u8>), String> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpStream;
 
-    let parsed_url = url.trim_start_matches("http://");
-    let mut parts = parsed_url.splitn(2, '/');
-    let host_port = parts.next().unwrap_or("127.0.0.1:80");
-    let path = format!("/{}", parts.next().unwrap_or(""));
-
-    let mut stream = TcpStream::connect(host_port)
+    let target_addr = format!("127.0.0.1:{}", port);
+    let mut stream = TcpStream::connect(&target_addr)
         .await
         .map_err(|e| format!("Connect error: {}", e))?;
 
     let http_req = format!(
         "GET {} HTTP/1.1\r\nHost: {}\r\nUser-Agent: NetLabGateway/1.0\r\nConnection: close\r\n\r\n",
-        path, host_port
+        path, host_header
     );
 
     stream
@@ -356,10 +373,13 @@ async fn reqwest_stream_fetch(url: &str) -> Result<(StatusCode, Option<String>, 
     let headers_part = split_res.next().unwrap_or("");
     let body_offset = headers_part.len() + 4;
 
-    let status = if headers_part.starts_with("HTTP/1.1 200") || headers_part.starts_with("HTTP/1.0 200") {
-        StatusCode::OK
-    } else if headers_part.contains(" 404 ") {
-        StatusCode::NOT_FOUND
+    let status = if let Some(first_line) = headers_part.lines().next() {
+        let code_str = first_line.split_whitespace().nth(1).unwrap_or("200");
+        code_str
+            .parse::<u16>()
+            .ok()
+            .and_then(|c| StatusCode::from_u16(c).ok())
+            .unwrap_or(StatusCode::OK)
     } else {
         StatusCode::OK
     };
