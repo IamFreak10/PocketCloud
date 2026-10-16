@@ -8,6 +8,7 @@ use crate::models::{
     SystemCapabilities,
 };
 use crate::simulator::Simulator;
+use crate::qemu::QemuManager;
 use std::sync::Arc;
 use tauri::State;
 use uuid::Uuid;
@@ -16,6 +17,7 @@ pub struct AppState {
     pub db: Arc<Database>,
     pub docker: Arc<DockerManager>,
     pub simulator: Arc<Simulator>,
+    pub qemu: Arc<QemuManager>,
     pub gateway: Arc<HostGateway>,
     pub dns: Arc<DnsEngine>,
     pub gateway_port: u16,
@@ -28,7 +30,36 @@ pub async fn get_capabilities(state: State<'_, AppState>) -> Result<SystemCapabi
 
 #[tauri::command]
 pub async fn list_labs(state: State<'_, AppState>) -> Result<Vec<Lab>, String> {
-    state.db.list_labs().map_err(|e| e.to_string())
+    let mut labs = state.db.list_labs().map_err(|e| e.to_string())?;
+    for lab in &mut labs {
+        let mut lab_changed = false;
+        for comp in &mut lab.components {
+            if comp.status == "running" {
+                if comp.runtime_mode == "docker" {
+                    let running = if let Some(cid) = &comp.container_id {
+                        state.docker.is_container_running(cid).await
+                    } else {
+                        false
+                    };
+                    if !running {
+                        comp.status = "stopped".to_string();
+                        comp.container_id = None;
+                        lab_changed = true;
+                    }
+                } else if comp.runtime_mode == "qemu" {
+                    if !state.qemu.is_running(&comp.id) {
+                        comp.status = "stopped".to_string();
+                        comp.container_id = None;
+                        lab_changed = true;
+                    }
+                }
+            }
+        }
+        if lab_changed {
+            let _ = state.db.save_lab(lab);
+        }
+    }
+    Ok(labs)
 }
 
 #[tauri::command]
@@ -142,13 +173,20 @@ pub async fn create_lab(
             });
         } else if tmpl == "ubuntu" || tmpl == "ubuntu-vps" {
             let vps_id = format!("vps-{}", &Uuid::new_v4().to_string()[..6]);
+            let (runtime_mode, image) = if is_docker {
+                ("docker".to_string(), "netlab/ubuntu-vps:24.04".to_string())
+            } else if state.qemu.is_available() {
+                ("qemu".to_string(), "ubuntu:24.04".to_string())
+            } else {
+                ("simulated".to_string(), "ubuntu:24.04".to_string())
+            };
             components.push(LabComponent {
                 id: vps_id.clone(),
                 lab_id: lab_id.clone(),
                 name: "Ubuntu 24.04 LTS VPS Node".to_string(),
                 component_type: "vps".to_string(),
-                runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
-                image: "ubuntu:24.04".to_string(),
+                runtime_mode,
+                image,
                 status: "stopped".to_string(),
                 container_id: None,
                 ip_address: None,
@@ -200,22 +238,43 @@ pub async fn start_component(
         .cloned()
         .ok_or("Component not found")?;
 
-    if comp.runtime_mode == "docker" && state.docker.is_available() {
+    if comp.runtime_mode == "qemu" {
+        // Never allocate a second port for an already-running VM.  Doing so
+        // makes the database point at a port different from QEMU's SSH
+        // forward and leaves the UI permanently unable to connect.
+        let port = if state.qemu.is_running(&comp.id) {
+            comp.host_port.ok_or("Running VM has no recorded SSH port")?
+        } else {
+            find_available_port(comp.host_port.unwrap_or(18022))
+        };
+        let pid = state.qemu.start_vm(&comp.id, port)?;
+        comp.container_id = Some(pid);
+        comp.ip_address = Some("127.0.0.1 (QEMU VM)".to_string());
+        comp.host_port = Some(port);
+        comp.container_port = Some(22);
+        comp.status = "running".to_string();
+    } else if comp.runtime_mode == "docker" && state.docker.is_available() {
         let container_name = format!("netlab_{}_{}", lab_id, comp.id);
-        let (host_port_opt, container_port_opt) = match comp.component_type.as_str() {
+        let (host_port_opt, container_port_opt, net_mode) = match comp.component_type.as_str() {
             "database" => (
                 Some(find_available_port(comp.host_port.unwrap_or(15432))),
                 Some(comp.container_port.unwrap_or(5432)),
+                "bridge".to_string(),
             ),
             "web" => (
                 Some(find_available_port(comp.host_port.unwrap_or(18081))),
                 Some(comp.container_port.unwrap_or(80)),
+                "bridge".to_string(),
             ),
-            "vps" => (
-                Some(find_available_port(comp.host_port.unwrap_or(18022))),
-                Some(comp.container_port.unwrap_or(22)),
-            ),
-            _ => (comp.host_port.map(find_available_port), comp.container_port),
+            "vps" => {
+                let vps_ssh_port = find_available_port(comp.host_port.unwrap_or(18022));
+                (
+                    Some(vps_ssh_port),
+                    Some(vps_ssh_port),
+                    "host".to_string(),
+                )
+            }
+            _ => (comp.host_port.map(find_available_port), comp.container_port, "bridge".to_string()),
         };
 
         let actual_image = if comp.component_type == "vps" && comp.image.contains("ubuntu") {
@@ -233,11 +292,12 @@ pub async fn start_component(
         } else if comp.component_type == "web" {
             None // Nginx runs its default CMD
         } else if actual_image.contains("ubuntu-vps") {
-            Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string()])
+            let port_str = host_port_opt.unwrap_or(18022).to_string();
+            Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string(), "-p".to_string(), port_str])
         } else if actual_image.contains("ubuntu") {
-            Some(vec!["bash".to_string()])
+            Some(vec!["sleep".to_string(), "infinity".to_string()])
         } else {
-            Some(vec!["sh".to_string()])
+            Some(vec!["sleep".to_string(), "infinity".to_string()])
         };
 
         let (container_id, ip) = state
@@ -249,6 +309,7 @@ pub async fn start_component(
                 container_port_opt,
                 env,
                 cmd,
+                Some(net_mode),
             )
             .await?;
 
@@ -306,6 +367,10 @@ pub async fn start_component(
                 });
             }
         }
+    } else if comp.runtime_mode == "docker" {
+        return Err("Docker daemon is not available. Please ensure Docker is running and /var/run/docker.sock is accessible.".to_string());
+    } else if comp.runtime_mode == "qemu" {
+        return Err("QEMU VM runtime is not available on this host.".to_string());
     } else {
         // Simulated mode
         state.simulator.init_component(&comp.id, &comp.component_type);
@@ -341,7 +406,9 @@ pub async fn stop_component(
         .cloned()
         .ok_or("Component not found")?;
 
-    if let Some(cid) = &comp.container_id {
+    if comp.runtime_mode == "qemu" {
+        state.qemu.stop_vm(&comp.id)?;
+    } else if let Some(cid) = &comp.container_id {
         let _ = state.docker.stop_container(cid).await;
     }
 
@@ -366,6 +433,7 @@ pub async fn add_component(
     image: String,
     host_port: Option<u16>,
     container_port: Option<u16>,
+    runtime_mode: Option<String>,
 ) -> Result<LabComponent, String> {
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
     let mut lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
@@ -384,12 +452,21 @@ pub async fn add_component(
         },
     };
 
+    let actual_runtime_mode = if let Some(mode) = runtime_mode {
+        mode
+    } else if is_docker {
+        "docker".to_string()
+    } else if state.qemu.is_available() && image.contains("ubuntu") {
+        "qemu".to_string()
+    } else {
+        "simulated".to_string()
+    };
     let comp = LabComponent {
         id: comp_id,
         lab_id: lab_id.clone(),
         name,
         component_type,
-        runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+        runtime_mode: actual_runtime_mode,
         image,
         status: "stopped".to_string(),
         container_id: None,
@@ -416,7 +493,11 @@ pub async fn exec_command(
 ) -> Result<ExecResult, String> {
     let initial_cwd = cwd.unwrap_or_else(|| "/root".to_string());
 
-    if runtime_mode == "docker" {
+    if runtime_mode == "qemu" {
+        let labs = state.db.list_labs().map_err(|e| e.to_string())?;
+        for lab in labs { for comp in lab.components { if comp.id == component_id { return state.qemu.exec_command(&component_id, comp.host_port.ok_or("VM SSH port missing")?, &command, &initial_cwd).await; } } }
+        Err("Active QEMU VM not found for component".to_string())
+    } else if runtime_mode == "docker" {
         let labs = state.db.list_labs().map_err(|e| e.to_string())?;
         for lab in labs {
             for comp in lab.components {
@@ -425,13 +506,15 @@ pub async fn exec_command(
                         let is_ubuntu = comp.image.contains("ubuntu");
                         let shell = if is_ubuntu { "bash" } else { "sh" };
 
+                        let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
                         let script = format!(
-                            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true; {}
+                            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
+{}
 __NETLAB_EXIT_CODE=$?
 echo ""
 echo "__NETLAB_CWD__:$(pwd)"
 exit $__NETLAB_EXIT_CODE"#,
-                            initial_cwd, command
+                            initial_cwd, normalized_command
                         );
 
                         let mut res = state

@@ -100,7 +100,8 @@ export const api = {
     componentType: string,
     image: string,
     hostPort?: number,
-    containerPort?: number
+    containerPort?: number,
+    runtimeMode?: string
   ): Promise<LabComponent> {
     if (isTauri) {
       return await invoke<LabComponent>('add_component', {
@@ -110,6 +111,7 @@ export const api = {
         image,
         hostPort,
         containerPort,
+        runtimeMode,
       });
     }
     const labs = await this.listLabs();
@@ -120,7 +122,7 @@ export const api = {
       lab_id: labId,
       name,
       component_type: componentType as any,
-      runtime_mode: 'docker',
+      runtime_mode: (runtimeMode || 'docker') as any,
       image,
       status: 'stopped',
       host_port: hostPort,
@@ -246,9 +248,136 @@ export const api = {
       };
     }
 
+    // git commands
+    if (mainCmd === 'git') {
+      if (parts[1] === '--version') {
+        return { exit_code: 0, stdout: 'git version 2.43.0\n', stderr: '', cwd: currentCwd };
+      }
+      if (parts[1] === 'clone') {
+        const repo = parts[2] || 'repo';
+        const repoName = repo.split('/').pop()?.replace('.git', '') || 'repo';
+        return {
+          exit_code: 0,
+          stdout: `Cloning into '${repoName}'...\nremote: Enumerating objects: 100, done.\nremote: Counting objects: 100% (100/100), done.\nremote: Compressing objects: 100% (80/80), done.\nReceiving objects: 100% (100/100), 42.00 KiB | 2.00 MiB/s, done.\n`,
+          stderr: '',
+          cwd: currentCwd,
+        };
+      }
+      if (parts[1] === 'init') {
+        return { exit_code: 0, stdout: `Initialized empty Git repository in ${currentCwd}/.git/\n`, stderr: '', cwd: currentCwd };
+      }
+      if (parts[1] === 'status') {
+        return { exit_code: 0, stdout: 'On branch main\nnothing to commit, working tree clean\n', stderr: '', cwd: currentCwd };
+      }
+      return { exit_code: 0, stdout: `git: '${parts.slice(1).join(' ')}' executed\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // apt / apt-get package manager
+    if (mainCmd === 'apt' || mainCmd === 'apt-get') {
+      const subCmd = parts[1];
+      const pkgName = parts.slice(2).filter(p => !p.startsWith('-')).join(' ') || 'package';
+      if (subCmd === 'update') {
+        return {
+          exit_code: 0,
+          stdout: 'Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease\nHit:2 http://security.ubuntu.com/ubuntu noble-security InRelease\nReading package lists... Done\nBuilding dependency tree... Done\n',
+          stderr: '', cwd: currentCwd,
+        };
+      }
+      if (subCmd === 'install') {
+        return {
+          exit_code: 0,
+          stdout: `Reading package lists... Done\nBuilding dependency tree... Done\nThe following NEW packages will be installed:\n  ${pkgName}\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 3,456 kB of archives.\nAfter this operation, 12.3 MB of additional disk space will be used.\nSelecting previously unselected package ${pkgName}.\nPreparing to unpack .../archives/${pkgName}_*.deb ...\nUnpacking ${pkgName} ...\nSetting up ${pkgName} ...\nProcessing triggers for man-db ...\n\n✅ ${pkgName} installed successfully!\n`,
+          stderr: '', cwd: currentCwd,
+        };
+      }
+      return { exit_code: 0, stdout: `apt: executed ${trimmed}\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // echo command
+    if (mainCmd === 'echo') {
+      return { exit_code: 0, stdout: parts.slice(1).join(' ').replace(/^["']|["']$/g, '') + '\n', stderr: '', cwd: currentCwd };
+    }
+
+    // hostname
+    if (mainCmd === 'hostname') {
+      return { exit_code: 0, stdout: 'ubuntu-24\n', stderr: '', cwd: currentCwd };
+    }
+
+    // uptime
+    if (mainCmd === 'uptime') {
+      return { exit_code: 0, stdout: ' 22:08:00 up 3 days, 4:20, 1 user, load average: 0.08, 0.03, 0.01\n', stderr: '', cwd: currentCwd };
+    }
+
+    // free
+    if (mainCmd === 'free') {
+      return { exit_code: 0, stdout: '               total        used        free      shared  buff/cache   available\nMem:        15728640     2834432     9437184      131072     3457024    12582912\nSwap:        2097152           0     2097152\n', stderr: '', cwd: currentCwd };
+    }
+
+    // df
+    if (mainCmd === 'df') {
+      return { exit_code: 0, stdout: 'Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1        48G  1.5G   44G   4% /\ntmpfs           7.5G     0  7.5G   0% /dev/shm\n', stderr: '', cwd: currentCwd };
+    }
+
+    // ps
+    if (mainCmd === 'ps') {
+      return { exit_code: 0, stdout: 'USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nroot         1  0.1  0.2  12345  4096 ?        Ss   00:00   0:00 /usr/sbin/sshd -D\nroot        24  0.0  0.1   8192  2048 pts/0    S    00:01   0:00 bash\nroot        42  0.0  0.0   7168  1024 pts/0    R+   00:01   0:00 ps aux\n', stderr: '', cwd: currentCwd };
+    }
+
+    // curl
+    if (mainCmd === 'curl') {
+      return { exit_code: 0, stdout: '< HTTP/1.1 200 OK\n< Content-Type: text/html\n<!DOCTYPE html><html><body><h1>NetLab VPS</h1></body></html>\n', stderr: '', cwd: currentCwd };
+    }
+
+    // mkdir
+    if (mainCmd === 'mkdir') {
+      return { exit_code: 0, stdout: '', stderr: '', cwd: currentCwd };
+    }
+
+    // touch
+    if (mainCmd === 'touch') {
+      return { exit_code: 0, stdout: '', stderr: '', cwd: currentCwd };
+    }
+
+    // cat (generic)
+    if (mainCmd === 'cat') {
+      const filePath = parts[1] || '';
+      return { exit_code: 0, stdout: `# Content of ${filePath}\n(File content would appear here in a real VPS)\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // systemctl
+    if (mainCmd === 'systemctl') {
+      const svcAction = parts[1];
+      const svc = parts[2] || 'service';
+      return { exit_code: 0, stdout: `${svc}: ${svcAction === 'status' ? 'active (running)' : svcAction + ' done'}\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // nginx
+    if (mainCmd === 'nginx' || mainCmd === 'service') {
+      return { exit_code: 0, stdout: `${mainCmd} ${parts.slice(1).join(' ')}: OK\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // python3
+    if (mainCmd === 'python3') {
+      if (parts[1] === '--version') return { exit_code: 0, stdout: 'Python 3.12.3\n', stderr: '', cwd: currentCwd };
+      return { exit_code: 0, stdout: `python3: executed\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // node
+    if (mainCmd === 'node') {
+      if (parts[1] === '--version') return { exit_code: 0, stdout: 'v20.18.0\n', stderr: '', cwd: currentCwd };
+      return { exit_code: 0, stdout: `node: executed\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // npm
+    if (mainCmd === 'npm') {
+      if (parts[1] === '--version') return { exit_code: 0, stdout: '10.8.2\n', stderr: '', cwd: currentCwd };
+      return { exit_code: 0, stdout: `npm ${parts.slice(1).join(' ')}: done\n`, stderr: '', cwd: currentCwd };
+    }
+
+    // Generic fallback
     return {
       exit_code: 0,
-      stdout: `Executed '${command}' in ${currentCwd}\n`,
+      stdout: `[NetLab VPS] $ ${command}\n`,
       stderr: '',
       cwd: currentCwd,
     };

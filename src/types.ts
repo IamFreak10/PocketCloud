@@ -25,7 +25,7 @@ export interface LabComponent {
   lab_id: string;
   name: string;
   component_type: 'vps' | 'web' | 'app' | 'database' | 'dns' | 'router';
-  runtime_mode: 'docker' | 'simulated';
+  runtime_mode: 'docker' | 'qemu' | 'simulated';
   image: string;
   status: 'stopped' | 'starting' | 'running' | 'error';
   container_id?: string;
