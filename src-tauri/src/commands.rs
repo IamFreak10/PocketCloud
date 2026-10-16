@@ -173,6 +173,18 @@ pub async fn create_lab(
     Ok(lab)
 }
 
+fn find_available_port(preferred: u16) -> u16 {
+    let mut port = preferred;
+    for _ in 0..100 {
+        if let Ok(listener) = std::net::TcpListener::bind(("127.0.0.1", port)) {
+            drop(listener);
+            return port;
+        }
+        port += 1;
+    }
+    preferred
+}
+
 #[tauri::command]
 pub async fn start_component(
     state: State<'_, AppState>,
@@ -192,18 +204,24 @@ pub async fn start_component(
         let container_name = format!("netlab_{}_{}", lab_id, comp.id);
         let (host_port_opt, container_port_opt) = match comp.component_type.as_str() {
             "database" => (
-                Some(comp.host_port.unwrap_or(15432)),
+                Some(find_available_port(comp.host_port.unwrap_or(15432))),
                 Some(comp.container_port.unwrap_or(5432)),
             ),
             "web" => (
-                Some(comp.host_port.unwrap_or(18081)),
+                Some(find_available_port(comp.host_port.unwrap_or(18081))),
                 Some(comp.container_port.unwrap_or(80)),
             ),
             "vps" => (
-                comp.host_port,
-                comp.container_port,
+                Some(find_available_port(comp.host_port.unwrap_or(18022))),
+                Some(comp.container_port.unwrap_or(22)),
             ),
-            _ => (comp.host_port, comp.container_port),
+            _ => (comp.host_port.map(find_available_port), comp.container_port),
+        };
+
+        let actual_image = if comp.component_type == "vps" && comp.image.contains("ubuntu") {
+            "netlab/ubuntu-vps:24.04".to_string()
+        } else {
+            comp.image.clone()
         };
 
         let mut env = vec!["NETLAB=true".to_string()];
@@ -214,9 +232,9 @@ pub async fn start_component(
             None
         } else if comp.component_type == "web" {
             None // Nginx runs its default CMD
-        } else if comp.image.contains("ubuntu-vps") {
+        } else if actual_image.contains("ubuntu-vps") {
             Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string()])
-        } else if comp.image.contains("ubuntu") {
+        } else if actual_image.contains("ubuntu") {
             Some(vec!["bash".to_string()])
         } else {
             Some(vec!["sh".to_string()])
@@ -226,13 +244,30 @@ pub async fn start_component(
             .docker
             .start_container(
                 &container_name,
-                &comp.image,
+                &actual_image,
                 host_port_opt,
                 container_port_opt,
                 env,
                 cmd,
             )
             .await?;
+
+        // If it's a VPS with SSH, copy host SSH public key into container if available
+        if comp.component_type == "vps" && comp.image.contains("ubuntu") {
+            let docker = state.docker.clone();
+            let cid = container_id.clone();
+            tokio::spawn(async move {
+                let home = std::env::var("HOME").unwrap_or_default();
+                let pub_key_path = format!("{}/.ssh/id_ed25519.pub", home);
+                if let Ok(key) = tokio::fs::read_to_string(pub_key_path).await {
+                    let inject_cmd = format!(
+                        "mkdir -p /root/.ssh && echo '{}' >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys",
+                        key.trim()
+                    );
+                    let _ = docker.exec_command(&cid, vec!["sh", "-c", &inject_cmd]).await;
+                }
+            });
+        }
 
         // If it's PostgreSQL, initialize default table after container boots
         if comp.component_type == "database" {
@@ -339,6 +374,16 @@ pub async fn add_component(
     let comp_id = format!("{}-{}", component_type, &Uuid::new_v4().to_string()[..6]);
     let now = chrono::Utc::now().to_rfc3339();
 
+    let allocated_host_port = match host_port {
+        Some(p) => Some(find_available_port(p)),
+        None => match component_type.as_str() {
+            "vps" => Some(find_available_port(18022)),
+            "web" => Some(find_available_port(18081)),
+            "database" => Some(find_available_port(15432)),
+            _ => None,
+        },
+    };
+
     let comp = LabComponent {
         id: comp_id,
         lab_id: lab_id.clone(),
@@ -349,7 +394,7 @@ pub async fn add_component(
         status: "stopped".to_string(),
         container_id: None,
         ip_address: None,
-        host_port,
+        host_port: allocated_host_port,
         container_port,
         created_at: now,
     };

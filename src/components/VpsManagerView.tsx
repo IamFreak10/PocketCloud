@@ -54,6 +54,8 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
   components,
   selectedComponentId,
   onSelectComponent,
+  onStartComponent,
+  onStopComponent,
 }) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'packages' | 'files' | 'processes' | 'network' | 'github'>('terminal');
   const [copiedSsh, setCopiedSsh] = useState(false);
@@ -290,6 +292,27 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
               {copiedSsh ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
           </div>
+
+          {/* Power Control Button */}
+          {isRunning ? (
+            <button
+              onClick={() => onStopComponent && activeComp && onStopComponent(activeComp.lab_id, activeComp.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 font-semibold rounded-xl text-xs transition cursor-pointer"
+              title="Stop VPS Container"
+            >
+              <Square className="w-3.5 h-3.5" />
+              <span>Stop VPS</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onStartComponent && activeComp && onStartComponent(activeComp.lab_id, activeComp.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-950 transition cursor-pointer"
+              title="Start VPS Container"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Start VPS</span>
+            </button>
+          )}
 
           {/* Container Selector */}
           <select
