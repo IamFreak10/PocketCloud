@@ -196,5 +196,28 @@ mod tests {
 
         // Clean up Nginx
         let _ = docker.stop_container(&nginx_id).await;
+
+        // 3. Test Real Ubuntu 24.04 LTS Execution
+        let (ubuntu_id, _) = docker
+            .start_container(
+                "netlab_test_ubuntu_e2e",
+                "ubuntu:24.04",
+                None,
+                None,
+                vec![],
+                Some(vec!["bash".to_string()]),
+            )
+            .await
+            .expect("Failed to start Ubuntu 24.04 container");
+
+        let ub_os = docker
+            .exec_command(&ubuntu_id, vec!["bash", "-c", "cat /etc/os-release"])
+            .await
+            .expect("exec failed on ubuntu");
+        assert_eq!(ub_os.exit_code, 0);
+        assert!(ub_os.stdout.contains("Ubuntu"));
+        assert!(ub_os.stdout.contains("24.04"));
+
+        let _ = docker.stop_container(&ubuntu_id).await;
     }
 }

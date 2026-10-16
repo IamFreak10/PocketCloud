@@ -190,8 +190,21 @@ pub async fn start_component(
 
     if comp.runtime_mode == "docker" && state.docker.is_available() {
         let container_name = format!("netlab_{}_{}", lab_id, comp.id);
-        let host_port = comp.host_port.unwrap_or(if comp.component_type == "database" { 15432 } else { 18081 });
-        let container_port = comp.container_port.or(Some(if comp.component_type == "database" { 5432 } else { 80 }));
+        let (host_port_opt, container_port_opt) = match comp.component_type.as_str() {
+            "database" => (
+                Some(comp.host_port.unwrap_or(15432)),
+                Some(comp.container_port.unwrap_or(5432)),
+            ),
+            "web" => (
+                Some(comp.host_port.unwrap_or(18081)),
+                Some(comp.container_port.unwrap_or(80)),
+            ),
+            "vps" => (
+                comp.host_port,
+                comp.container_port,
+            ),
+            _ => (comp.host_port, comp.container_port),
+        };
 
         let mut env = vec!["NETLAB=true".to_string()];
         let cmd = if comp.component_type == "database" {
@@ -212,8 +225,8 @@ pub async fn start_component(
             .start_container(
                 &container_name,
                 &comp.image,
-                Some(host_port),
-                container_port,
+                host_port_opt,
+                container_port_opt,
                 env,
                 cmd,
             )
@@ -233,24 +246,26 @@ pub async fn start_component(
         comp.container_id = Some(container_id);
         comp.ip_address = ip;
         comp.status = "running".to_string();
-        comp.host_port = Some(host_port);
+        comp.host_port = host_port_opt;
 
-        state.gateway.register_component(&comp.id, host_port);
+        if let Some(hp) = host_port_opt {
+            state.gateway.register_component(&comp.id, hp);
+        }
 
         // Register any domain routes for this component in Gateway and DNS
         for r in &lab.routes {
             if r.target_component_id == comp.id {
-                state.gateway.register_route(&r.domain, host_port);
+                state.gateway.register_route(&r.domain, r.host_port);
                 state.dns.add_record(DnsRecord {
                     id: r.id.clone(),
                     lab_id: lab_id.clone(),
                     domain: r.domain.clone(),
                     record_type: "A".to_string(),
-                    value: format!("127.0.0.1:{}", host_port),
+                    value: format!("127.0.0.1:{}", r.host_port),
                     ttl: 300,
                     target_component_id: comp.id.clone(),
                     target_port: r.target_port,
-                    host_port,
+                    host_port: r.host_port,
                 });
             }
         }
