@@ -59,92 +59,147 @@ impl DockerManager {
         container_port: Option<u16>,
         env: Vec<String>,
         cmd: Option<Vec<String>>,
+        network_mode: Option<String>,
     ) -> Result<(String, Option<String>), String> {
         let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
 
         // 1. Ensure image exists
         self.ensure_image(image).await?;
 
-        // 2. Prepare port bindings on loopback only (127.0.0.1) for safety
+        let net_mode = network_mode.unwrap_or_else(|| "bridge".to_string());
+        let is_host_net = net_mode == "host";
+
+        // 2. Prepare port bindings on loopback only (127.0.0.1) for safety (bridge mode only)
         let mut port_bindings: PortMap = HashMap::new();
         let mut exposed_ports = HashMap::new();
 
-        if let (Some(h_port), Some(c_port)) = (host_port, container_port) {
-            let port_key = format!("{}/tcp", c_port);
-            exposed_ports.insert(port_key.clone(), HashMap::new());
-            port_bindings.insert(
-                port_key,
-                Some(vec![PortBinding {
-                    host_ip: Some("127.0.0.1".to_string()),
-                    host_port: Some(h_port.to_string()),
-                }]),
-            );
+        if !is_host_net {
+            if let (Some(h_port), Some(c_port)) = (host_port, container_port) {
+                let port_key = format!("{}/tcp", c_port);
+                exposed_ports.insert(port_key.clone(), HashMap::new());
+                port_bindings.insert(
+                    port_key,
+                    Some(vec![PortBinding {
+                        host_ip: Some("127.0.0.1".to_string()),
+                        host_port: Some(h_port.to_string()),
+                    }]),
+                );
+            }
         }
 
         // 3. Configure Resource Limits (Default: 512MB RAM, 1 CPU quota)
         let host_config = HostConfig {
-            port_bindings: Some(port_bindings),
+            port_bindings: if is_host_net { None } else { Some(port_bindings) },
             memory: Some(512 * 1024 * 1024), // 512 MB
             nano_cpus: Some(1_000_000_000),   // 1 CPU
-            network_mode: Some("bridge".to_string()),
+            network_mode: Some(net_mode.clone()),
+            extra_hosts: Some(vec!["ubuntu-24:127.0.0.1".to_string()]),
             ..Default::default()
         };
 
         let container_config = Config {
             image: Some(image.to_string()),
+            hostname: Some("ubuntu-24".to_string()),
             cmd: cmd.clone(),
             env: Some(env),
-            exposed_ports: Some(exposed_ports),
+            exposed_ports: if is_host_net { None } else { Some(exposed_ports) },
             host_config: Some(host_config),
             tty: Some(true),
             open_stdin: Some(true),
             ..Default::default()
         };
 
-        // Remove old container if exists with same name
-        let _ = docker
-            .remove_container(
-                name,
-                Some(RemoveContainerOptions {
-                    force: true,
-                    ..Default::default()
-                }),
-            )
-            .await;
+        // If container already exists with the same name, reuse and start it to preserve user files and software
+        let container_id = if let Ok(inspect) = docker.inspect_container(name, None::<InspectContainerOptions>).await {
+            let id = inspect.id.unwrap_or_else(|| name.to_string());
+            let is_running = inspect.state.and_then(|s| s.running).unwrap_or(false);
+            if !is_running {
+                let _ = docker.start_container(&id, None::<StartContainerOptions<String>>).await;
+            }
+            id
+        } else {
+            // Create container
+            let create_opts = CreateContainerOptions {
+                name: name.to_string(),
+                platform: None,
+            };
 
-        // Create container
-        let create_opts = CreateContainerOptions {
-            name: name.to_string(),
-            platform: None,
+            let container_res = docker
+                .create_container(Some(create_opts), container_config)
+                .await
+                .map_err(|e| format!("Failed to create container: {}", e))?;
+
+            let id = container_res.id;
+            docker
+                .start_container(&id, None::<StartContainerOptions<String>>)
+                .await
+                .map_err(|e| format!("Failed to start container: {}", e))?;
+            id
         };
 
-        let container_res = docker
-            .create_container(Some(create_opts), container_config)
-            .await
-            .map_err(|e| format!("Failed to create container: {}", e))?;
+        // Give container a brief moment to initialize or fail immediately
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
 
-        let container_id = container_res.id;
-
-        // Start container
-        docker
-            .start_container(&container_id, None::<StartContainerOptions<String>>)
-            .await
-            .map_err(|e| format!("Failed to start container: {}", e))?;
-
-        // Inspect to get IP
+        // Inspect to verify container is genuinely running and get IP
         let inspect = docker
             .inspect_container(&container_id, None::<InspectContainerOptions>)
             .await
             .map_err(|e| format!("Failed to inspect container: {}", e))?;
 
-        let ip_address = inspect
-            .network_settings
-            .and_then(|ns| ns.networks)
-            .and_then(|nets| nets.values().next().cloned())
-            .and_then(|net| net.ip_address)
-            .filter(|ip| !ip.is_empty());
+        let is_running = inspect
+            .state
+            .as_ref()
+            .and_then(|s| s.running)
+            .unwrap_or(false);
+
+        if !is_running {
+            let exit_code = inspect
+                .state
+                .as_ref()
+                .and_then(|s| s.exit_code)
+                .unwrap_or(-1);
+            let error_msg = inspect
+                .state
+                .as_ref()
+                .and_then(|s| s.error.clone())
+                .unwrap_or_default();
+            return Err(format!(
+                "Container {} exited immediately after start (exit code {}): {}",
+                name, exit_code, error_msg
+            ));
+        }
+
+        let ip_address = if is_host_net {
+            Some("127.0.0.1".to_string())
+        } else {
+            inspect
+                .network_settings
+                .and_then(|ns| ns.networks)
+                .and_then(|nets| nets.values().next().cloned())
+                .and_then(|net| net.ip_address)
+                .filter(|ip| !ip.is_empty())
+        };
 
         Ok((container_id, ip_address))
+    }
+
+    pub async fn is_container_running(&self, container_id: &str) -> bool {
+        let Some(docker) = self.client.as_ref() else {
+            return false;
+        };
+        match docker.inspect_container(container_id, None::<InspectContainerOptions>).await {
+            Ok(inspect) => inspect.state.and_then(|s| s.running).unwrap_or(false),
+            Err(_) => false,
+        }
+    }
+
+    pub async fn ping(&self) -> Result<(), String> {
+        let docker = self.client.as_ref().ok_or("Docker client not initialized")?;
+        docker
+            .ping()
+            .await
+            .map(|_| ())
+            .map_err(|e| format!("Docker ping failed: {}", e))
     }
 
     pub async fn stop_container(&self, container_id: &str) -> Result<(), String> {
