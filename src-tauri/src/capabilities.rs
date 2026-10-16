@@ -7,13 +7,13 @@ pub async fn detect_capabilities(gateway_port: u16) -> SystemCapabilities {
     let (docker_available, docker_version) = match bollard::Docker::connect_with_local_defaults() {
         Ok(docker) => match docker.version().await {
             Ok(ver) => (true, ver.version.unwrap_or_else(|| "Unknown".to_string())),
-            Err(_) => (false, "Not responding".to_string()),
+            Err(e) => (false, format!("Not responding: {}", e)),
         },
-        Err(_) => (false, "Daemon not found".to_string()),
+        Err(e) => (false, format!("Daemon not found: {}", e)),
     };
 
     // 2. Detect KVM
-    let kvm_available = Path::new("/dev/kvm").exists() && fs::File::open("/dev/kvm").is_ok();
+    let kvm_available = Path::new("/dev/kvm").exists() && fs::OpenOptions::new().read(true).write(true).open("/dev/kvm").is_ok();
 
     // 3. Detect System Memory and CPUs
     let cpu_cores = std::thread::available_parallelism()

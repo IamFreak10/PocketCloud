@@ -5,6 +5,7 @@ pub mod dns;
 pub mod docker;
 pub mod gateway;
 pub mod models;
+pub mod qemu;
 pub mod simulator;
 
 #[cfg(test)]
@@ -16,6 +17,7 @@ use dns::DnsEngine;
 use docker::DockerManager;
 use gateway::HostGateway;
 use simulator::Simulator;
+use qemu::QemuManager;
 use std::sync::Arc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -23,6 +25,7 @@ pub fn run() {
     let db = Arc::new(Database::new().expect("Failed to initialize SQLite database"));
     let docker = Arc::new(DockerManager::new());
     let simulator = Arc::new(Simulator::new());
+    let qemu = Arc::new(QemuManager::new());
     let dns = Arc::new(DnsEngine::new());
     let gateway_port = 18080;
     let gateway = Arc::new(HostGateway::new(gateway_port, dns.clone()));
@@ -37,6 +40,7 @@ pub fn run() {
         db,
         docker,
         simulator,
+        qemu,
         gateway,
         dns,
         gateway_port,
