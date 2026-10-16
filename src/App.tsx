@@ -5,6 +5,7 @@ import { DashboardView } from './components/DashboardView';
 import { LabsView } from './components/LabsView';
 import { TopologyView } from './components/TopologyView';
 import { TerminalView } from './components/TerminalView';
+import { VpsManagerView } from './components/VpsManagerView';
 import { WebServersView } from './components/WebServersView';
 import { DatabasesView } from './components/DatabasesView';
 import { GatewayView } from './components/GatewayView';
@@ -230,13 +231,13 @@ export function App() {
           )}
 
           {currentTab === 'terminal' && (
-            <div className="p-8 h-full">
-              <TerminalView
-                components={currentLab?.components || []}
-                selectedComponentId={selectedComponentId}
-                onSelectComponent={setSelectedComponentId}
-              />
-            </div>
+            <VpsManagerView
+              components={currentLab?.components || []}
+              selectedComponentId={selectedComponentId}
+              onSelectComponent={setSelectedComponentId}
+              onStartComponent={handleStartComponent}
+              onStopComponent={handleStopComponent}
+            />
           )}
 
           {currentTab === 'browser' && (

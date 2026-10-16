@@ -85,9 +85,9 @@ export const LabsView: React.FC<LabsViewProps> = ({
       setActionLoading('quick-ubuntu');
       const comp = await onAddComponent(
         targetLabId,
-        'Ubuntu 24.04 LTS VPS Node',
+        'Ubuntu 24.04 LTS Full VPS',
         'vps',
-        'ubuntu:24.04',
+        'netlab/ubuntu-vps:24.04',
         18022,
         22
       );
@@ -364,8 +364,8 @@ export const LabsView: React.FC<LabsViewProps> = ({
                     const val = e.target.value;
                     setNodePreset(val);
                     if (val === 'ubuntu-24') {
-                      setCustomNodeName('Ubuntu 24.04 LTS VPS');
-                      setCustomImage('ubuntu:24.04');
+                      setCustomNodeName('Ubuntu 24.04 LTS Full VPS');
+                      setCustomImage('netlab/ubuntu-vps:24.04');
                       setCustomType('vps');
                       setCustomHostPort('18022');
                       setCustomContainerPort('22');

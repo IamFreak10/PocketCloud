@@ -214,6 +214,8 @@ pub async fn start_component(
             None
         } else if comp.component_type == "web" {
             None // Nginx runs its default CMD
+        } else if comp.image.contains("ubuntu-vps") {
+            Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string()])
         } else if comp.image.contains("ubuntu") {
             Some(vec!["bash".to_string()])
         } else {
