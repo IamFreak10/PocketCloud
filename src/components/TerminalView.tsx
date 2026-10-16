@@ -30,7 +30,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const xtermInstance = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
 
-  // Persistent Current Working Directory per component (default: '/root')
+  // Persistent working directory; a QEMU guest logs in as the non-root `netlab` user.
   const componentCwdMap = useRef<Record<string, string>>({});
   const [currentCwd, setCurrentCwd] = useState<string>('/root');
 
@@ -44,7 +44,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const activeComp = components.find((c) => c.id === selectedComponentId) || components[0];
 
   const getDisplayPath = (rawPath: string) => {
-    if (rawPath === '/root') return '~';
+    if (rawPath === '/root' || rawPath === '/home/netlab') return '~';
     if (rawPath.startsWith('/root/')) return '~' + rawPath.slice(5);
     return rawPath;
   };
@@ -53,19 +53,23 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
     const hostName = activeComp?.name?.toLowerCase().includes('ubuntu')
       ? 'ubuntu-24'
       : activeComp?.id || 'netlab-vps';
-    const rawDir = cwdOverride ?? componentCwdMap.current[activeComp?.id || ''] ?? '/root';
+    const defaultDir = activeComp?.runtime_mode === 'qemu' ? '/home/netlab' : '/root';
+    const rawDir = cwdOverride ?? componentCwdMap.current[activeComp?.id || ''] ?? defaultDir;
     const displayPath = getDisplayPath(rawDir);
 
     // Authentic Ubuntu 24.04 colored bash prompt: green user@host, white colon, blue path, white hash
-    return `\x1b[01;32mroot@${hostName}\x1b[00m:\x1b[01;34m${displayPath}\x1b[00m# `;
+    const user = activeComp?.runtime_mode === 'qemu' ? 'netlab' : 'root';
+    const prompt = user === 'root' ? '#' : '$';
+    return `\x1b[01;32m${user}@${hostName}\x1b[00m:\x1b[01;34m${displayPath}\x1b[00m${prompt} `;
   };
 
   const printUbuntuBanner = (term: Terminal) => {
     term.clear();
-    const activeDir = componentCwdMap.current[activeComp?.id || ''] || '/root';
+    const defaultDir = activeComp?.runtime_mode === 'qemu' ? '/home/netlab' : '/root';
+    const activeDir = componentCwdMap.current[activeComp?.id || ''] || defaultDir;
     setCurrentCwd(activeDir);
 
-    // Official Ubuntu 24.04 LTS Noble Numbat Welcome Banner
+    // Full Ubuntu welcome banner for all runtime modes (docker, qemu, simulated)
     term.writeln('\x1b[1;37mWelcome to Ubuntu 24.04 LTS (GNU/Linux 6.8.0-45-generic x86_64)\x1b[0m\r\n');
     term.writeln(' * Documentation:  \x1b[1;34mhttps://help.ubuntu.com\x1b[0m');
     term.writeln(' * Management:     \x1b[1;34mhttps://landscape.canonical.com\x1b[0m');
@@ -74,13 +78,22 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
     term.writeln('  System load:  \x1b[1;32m0.08\x1b[0m                Processes:             \x1b[1;32m31\x1b[0m');
     term.writeln('  Usage of /:   \x1b[1;32m1.2% of 48.00GB\x1b[0m     Users logged in:       \x1b[1;32m1\x1b[0m');
     term.writeln('  Memory usage: \x1b[1;32m8%\x1b[0m                  IPv4 address for eth0: \x1b[1;36m' + (activeComp?.ip_address || '172.17.0.2') + '\x1b[0m\r\n');
-    term.writeln(' * Strictly isolated persistent container environment active. Root shell ready.\r\n');
+    if (activeComp?.runtime_mode === 'qemu') {
+      term.writeln(' * QEMU guest VM selected. Login user: netlab.\r\n');
+    } else {
+      term.writeln(' * Ubuntu 24.04 LTS Full VPS (' + (activeComp?.image || 'netlab/ubuntu-vps:24.04') + ') — running\r\n');
+    }
     term.write(getPrompt(activeDir));
   };
+
+  const [executingCmd, setExecutingCmd] = useState<string | null>(null);
 
   const executeCommand = async (cmd: string) => {
     const term = xtermInstance.current;
     if (!term || !activeComp) return;
+
+    currentLineBuffer.current = '';
+    cursorPos.current = 0;
 
     const trimmed = cmd.trim();
     if (!trimmed) {
@@ -95,6 +108,9 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
     // Built-in 'clear' command (authentic Ubuntu behavior)
     if (trimmed === 'clear') {
+      currentLineBuffer.current = '';
+      cursorPos.current = 0;
+      term.write('\x1b[2J\x1b[3J\x1b[H');
       term.clear();
       term.write(getPrompt());
       return;
@@ -102,6 +118,8 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
     // Built-in 'history' command
     if (trimmed === 'history') {
+      currentLineBuffer.current = '';
+      cursorPos.current = 0;
       commandHistory.current.forEach((hCmd, idx) => {
         term.writeln(`  ${idx + 1}  ${hCmd}`);
       });
@@ -111,7 +129,17 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
     term.writeln('');
     isExecuting.current = true;
-    const activeDir = componentCwdMap.current[activeComp.id] || '/root';
+    setExecutingCmd(trimmed);
+    const activeDir = componentCwdMap.current[activeComp.id] || (activeComp.runtime_mode === 'qemu' ? '/home/netlab' : '/root');
+
+    // Visual feedback for commands taking longer than 1.2s
+    let hasShownWaitNotice = false;
+    const waitTimer = setTimeout(() => {
+      if (isExecuting.current) {
+        hasShownWaitNotice = true;
+        term.writeln(`\x1b[90m⚡ Executing: ${trimmed.slice(0, 40)} in VPS... (waiting for output)\x1b[0m`);
+      }
+    }, 1200);
 
     try {
       const res = await api.execCommand(
@@ -120,6 +148,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
         activeComp.runtime_mode,
         activeDir
       );
+      clearTimeout(waitTimer);
 
       let cleanStdout = res.stdout || '';
 
@@ -149,13 +178,16 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
         term.writeln('');
       }
     } catch (err: unknown) {
+      clearTimeout(waitTimer);
       term.writeln(
         `\x1b[1;31mbash: ${trimmed}: execution error: ${
           err instanceof Error ? err.message : String(err)
         }\x1b[0m`
       );
     } finally {
+      clearTimeout(waitTimer);
       isExecuting.current = false;
+      setExecutingCmd(null);
       currentLineBuffer.current = '';
       cursorPos.current = 0;
       term.write(getPrompt());
@@ -209,17 +241,13 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
       // Direct Keyboard Input Handling in xterm.js with Full Ubuntu Line Editing
       term.onData((data) => {
-        if (isExecuting.current) return;
+        // Clean bracketed paste wrappers if present
+        const cleanData = data.replace(/\x1b\[200~/g, '').replace(/\x1b\[201~/g, '');
 
-        // Enter key
-        if (data === '\r') {
-          const cmd = currentLineBuffer.current;
-          executeCommand(cmd);
-          return;
-        }
-
-        // Ctrl+C (Interrupt)
-        if (data === '\x03') {
+        // Ctrl+C (Interrupt running command or clear line)
+        if (cleanData === '\x03') {
+          isExecuting.current = false;
+          setExecutingCmd(null);
           currentLineBuffer.current = '';
           cursorPos.current = 0;
           term.writeln('^C');
@@ -227,8 +255,35 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
           return;
         }
 
+        if (isExecuting.current) return;
+
+        // Enter key (single carriage return or newline)
+        if (cleanData === '\r' || cleanData === '\n' || cleanData === '\r\n') {
+          const cmd = currentLineBuffer.current;
+          executeCommand(cmd);
+          return;
+        }
+
+        // Multi-line paste or text containing newlines (\r or \n)
+        if (cleanData.includes('\r') || cleanData.includes('\n')) {
+          const normalized = cleanData.replace(/\r\n|\r/g, '\n');
+          const hasTrailingNewline = cleanData.endsWith('\r') || cleanData.endsWith('\n');
+
+          // Render cleanly in xterm using \r\n so each line does not overwrite the previous
+          term.write(normalized.replace(/\n/g, '\r\n'));
+          currentLineBuffer.current += normalized;
+          cursorPos.current = currentLineBuffer.current.length;
+
+          if (hasTrailingNewline) {
+            const cmd = currentLineBuffer.current.trim();
+            executeCommand(cmd);
+          }
+          return;
+        }
+
         // Ctrl+L (Clear screen)
-        if (data === '\x0c') {
+        if (cleanData === '\x0c') {
+          term.write('\x1b[2J\x1b[3J\x1b[H');
           term.clear();
           term.write(getPrompt() + currentLineBuffer.current);
           const backSteps = currentLineBuffer.current.length - cursorPos.current;
@@ -422,8 +477,11 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const handleQuickCommand = (cmd: string) => {
     const term = xtermInstance.current;
     if (!term || isExecuting.current) return;
-    term.write(cmd);
+    if (cursorPos.current > 0) {
+      term.write(`\x1b[${cursorPos.current}D\x1b[K`);
+    }
     currentLineBuffer.current = cmd;
+    term.write(cmd);
     executeCommand(cmd);
   };
 
@@ -469,21 +527,30 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
           </div>
         </div>
 
-        {/* Center: Component Selector */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-gray-400 text-[11px] font-semibold">Container:</span>
-          <select
-            value={activeComp?.id || ''}
-            onChange={(e) => onSelectComponent(e.target.value)}
-            className="bg-[#2d2638] text-orange-300 border border-white/10 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-orange-500 font-mono cursor-pointer"
-          >
-            {components.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.image}) — {c.status}
-              </option>
-            ))}
-            {components.length === 0 && <option value="">No running container</option>}
-          </select>
+        {/* Center: Component Selector & Active Status Indicator */}
+        <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-[11px] font-semibold">Container:</span>
+            <select
+              value={activeComp?.id || ''}
+              onChange={(e) => onSelectComponent(e.target.value)}
+              className="bg-[#2d2638] text-orange-300 border border-white/10 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-orange-500 font-mono cursor-pointer"
+            >
+              {components.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.image}) — {c.status}
+                </option>
+              ))}
+              {components.length === 0 && <option value="">No running container</option>}
+            </select>
+          </div>
+
+          {executingCmd && (
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[11px] font-mono animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Running: <strong className="text-white">{executingCmd.length > 20 ? executingCmd.slice(0, 20) + '...' : executingCmd}</strong></span>
+            </div>
+          )}
         </div>
 
         {/* Right: Authentic Ubuntu Shell Quick Commands */}
