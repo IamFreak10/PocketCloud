@@ -1,5 +1,6 @@
 ; NSIS Modern User Interface script for PocketCloud Windows Setup Installer
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
 
 Name "PocketCloud"
 OutFile "PocketCloud-Setup-0.1.0.exe"
@@ -29,6 +30,36 @@ Section "PocketCloud Core" SecCore
   
   File "PocketCloud.exe"
   File "../src-tauri/icons/icon.ico"
+
+  ; Automated Environment Diagnostics & Docker Assistance
+  DetailPrint "Checking system container runtime prerequisites..."
+  
+  ; 1. Check WSL2
+  nsExec::ExecToLog 'cmd.exe /c "wsl.exe --status >nul 2>&1"'
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "WSL2 not detected. Attempting to enable Windows Subsystem for Linux..."
+    nsExec::ExecToLog 'cmd.exe /c "wsl.exe --install --no-launch"'
+  ${Else}
+    DetailPrint "WSL2 is active and healthy."
+  ${EndIf}
+
+  ; 2. Check Docker Desktop
+  ReadRegStr $1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop" "DisplayName"
+  ${If} $1 == ""
+    DetailPrint "Docker Desktop not detected."
+    MessageBox MB_YESNO|MB_ICONQUESTION "Docker Desktop is required to run isolated Ubuntu VPS containers.$\r$\n$\r$\nWould you like PocketCloud Installer to automatically download and run the Docker Desktop setup now?" IDNO skipDocker
+    DetailPrint "Downloading Docker Desktop Installer from official CDN..."
+    nsExec::ExecToLog 'powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile(\"https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe\", \"$TEMP\DockerDesktopInstaller.exe\")"'
+    Pop $2
+    ${If} $2 == 0
+      DetailPrint "Launching Docker Desktop setup..."
+      ExecWait '"$TEMP\DockerDesktopInstaller.exe"'
+    ${EndIf}
+    skipDocker:
+  ${Else}
+    DetailPrint "Docker Desktop installation detected."
+  ${EndIf}
 
   ; Write uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"

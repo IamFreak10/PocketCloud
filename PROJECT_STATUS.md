@@ -35,7 +35,7 @@ PocketCloud is an offline-first, zero-cost private cloud sandbox that spins up a
 
 | Artifact Name | Type | Size | SHA-256 Checksum | Description |
 |---------------|------|------|------------------|-------------|
-| **`PocketCloud-Setup-0.1.0.exe`** | NSIS Installer | **3.6 MB** | `85ea3978649ef3ce0d2f83eed33d2b2921c3570b3ba64ba1967671906e2754e6` | Windows setup executable with Start Menu, Desktop shortcuts, and uninstaller. |
+| **`PocketCloud-Setup-0.1.0.exe`** | NSIS Installer | **3.6 MB** | `8c9cf6a7c076291c204b5f6b0d6af306d523264de64ff716db746a3259ae0ccf` | Windows setup executable with Start Menu, Desktop shortcuts, auto-prerequisites, and uninstaller. |
 | **`PocketCloud-0.1.0.msi`** | MSI Package | **3.6 MB** | `ad430648f14d380cad06bbf1c48f9c6b3f891c3d087681e6aaa7af0d782822f5` | Windows Installer MSI package built with WiX toolset (`wixl`). |
 | **`PocketCloud.exe`** | Standalone Executable | **7.6 MB** | `b5df2c948bc2a24558d3e75f5b119aadccb3e21ee0996d6187ca75d284bf1117` | Standalone portable 64-bit Windows PE32+ executable (runs without install). |
 
