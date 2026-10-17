@@ -4,8 +4,6 @@
   "version": "0.1.0",
   "identifier": "com.iamfreak.pocketcloud",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
@@ -13,6 +11,7 @@
     "windows": [
       {
         "title": "PocketCloud — Zero-Cost Private Cloud & Full VPS Sandbox",
+        "url": "index.html",
         "width": 1280,
         "height": 820,
         "minWidth": 1024,

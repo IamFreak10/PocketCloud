@@ -35,9 +35,9 @@ PocketCloud is an offline-first, zero-cost private cloud sandbox that spins up a
 
 | Artifact Name | Type | Size | SHA-256 Checksum | Description |
 |---------------|------|------|------------------|-------------|
-| **`PocketCloud-Setup-0.1.0.exe`** | NSIS Installer | **3.6 MB** | `8c9cf6a7c076291c204b5f6b0d6af306d523264de64ff716db746a3259ae0ccf` | Windows setup executable with Start Menu, Desktop shortcuts, auto-prerequisites, and uninstaller. |
-| **`PocketCloud-0.1.0.msi`** | MSI Package | **3.6 MB** | `ad430648f14d380cad06bbf1c48f9c6b3f891c3d087681e6aaa7af0d782822f5` | Windows Installer MSI package built with WiX toolset (`wixl`). |
-| **`PocketCloud.exe`** | Standalone Executable | **7.6 MB** | `b5df2c948bc2a24558d3e75f5b119aadccb3e21ee0996d6187ca75d284bf1117` | Standalone portable 64-bit Windows PE32+ executable (runs without install). |
+| **`PocketCloud-Setup-0.1.0.exe`** | NSIS Installer | **4.2 MB** | `dd589ae5b18b14cf79bd832743737bcc945de26038d92d81d566c7ec4c62f56b` | Windows setup executable with embedded offline frontend, auto-prerequisites, and uninstaller. |
+| **`PocketCloud-0.1.0.msi`** | MSI Package | **4.2 MB** | `89de45d4610bc7e3ed003695565783c328e0a6ec5f973f13647356be7a69eac6` | Windows Installer MSI package built with WiX toolset (`wixl`). |
+| **`PocketCloud.exe`** | Standalone Executable | **8.1 MB** | `a495dc924f2b9bcb94fe1b631727c4cda58881e0a606aad6586b279022f6e625` | Standalone portable 64-bit Windows PE32+ executable with 100% offline embedded frontend. |
 
 ### Linux Production Bundles (`src-tauri/target/release/bundle/`)
 
