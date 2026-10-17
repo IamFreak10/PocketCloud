@@ -81,6 +81,10 @@ PocketCloud ওপেন করার সাথে সাথেই একটি 
 - **ডকার চালু থাকলে:** ৫টি চেকমার্ক সবুজ হয়ে স্বয়ংক্রিয়ভাবে ড্যাশবোর্ডে প্রবেশ করবে।
 - **ডকার চালু না থাকলে:** লোডিং স্ক্রিন আটকে থাকবে না—স্ক্রিনে **[Download Docker Desktop]**, **[Re-scan Environment]** এবং **[Enter PocketCloud (Offline Sandbox Mode)]** অপশন ভেসে উঠবে। আপনি সাথে সাথেই অ্যাপে প্রবেশ করতে পারবেন।
 
+<p align="center">
+  <img src="docs/screenshots/splash_diagnostics.png" alt="PocketCloud Diagnostics Engine" width="90%" />
+</p>
+
 ---
 
 ### 📂 ধাপ ২: কোলাপসিবল ড্রয়ার সিস্টেম (Full-Screen Workspace / Drawer Toggle)
@@ -90,6 +94,10 @@ v0.1.5 এ সংযুক্ত হয়েছে ফ্লুইড ও রে�
 - **রি-ওপেন করা:** সাইডবার হাইড থাকলে ড্যাশবোর্ডের বাম কোণায় থাকা **`[Menu]`** বাটনে অথবা টপবারের **`[Drawer]`** বাটনে ক্লিক করলেই ড্রয়ার মসৃণভাবে আবার ফিরে আসবে।
 - আপনার ড্রয়ার অন/অফ পছন্দের স্টেট স্বয়ংক্রিয়ভাবে সেভ থাকে।
 
+<p align="center">
+  <img src="docs/screenshots/zen_mode_drawer.png" alt="Zen Workspace Drawer Mode" width="90%" />
+</p>
+
 ---
 
 ### 🚀 ধাপ ৩: ক্লিন উবুন্টু VPS লঞ্চ করা
@@ -98,10 +106,14 @@ v0.1.5 এ সংযুক্ত হয়েছে ফ্লুইড ও রে�
 - **স্মার্ট অটো-পুল:** আপনার পিসিতে আগে থেকে কোনো ইমেজ তৈরি করতে হবে না—PocketCloud নিজে ব্যাকগ্রাউন্ডে অফিশিয়াল ডকার হাব থেকে উবুন্টু ইমেজ নামিয়ে SSH সার্ভার ও রুট অ্যাক্সেস কনফিগার করে নেয়।
 - এই VPS একদম আনম্যানেজড সার্ভারের মতো ক্লিন—কোনো ব্লটওয়্যার বা প্রাক-ইনস্টল করা Nginx/Node থাকবে না।
 
+<p align="center">
+  <img src="docs/screenshots/dashboard_main.png" alt="PocketCloud Dashboard" width="90%" />
+</p>
+
 ---
 
-### 💻 ধাপ ৪: রুট টার্মিনালে কাজ করা
-PocketCloud-এর ভেতরেই একটি হাই-এন্ড ডার্ক লিনাক্স টার্মিনাল দেওয়া আছে:
+### 💻 ধাপ ৪: রুট টার্মিনালে কাজ করা ও ১-ক্লিক সফটওয়্যার স্টোর
+PocketCloud-এর ভেতরেই একটি হাই-এন্ড ডার্ক লিনাক্স টার্মিনাল ও সফটওয়্যার স্টোর দেওয়া আছে:
 - বামপাশের সাইডবার থেকে **`Ubuntu VPS Terminal`**-এ ক্লিক করুন।
 - সরাসরি উবুন্টুর রুট টার্মিনাল চালু হয়ে যাবে:
   ```bash
@@ -112,6 +124,11 @@ PocketCloud-এর ভেতরেই একটি হাই-এন্ড ডা
   ```bash
   apt update && apt install -y curl git nginx python3
   ```
+- অথবা **`Software Store`** ট্যাবে গিয়ে ১-ক্লিকেই Nginx, Node.js 20, Python 3.12 বা Neofetch ইনস্টল করুন:
+
+<p align="center">
+  <img src="docs/screenshots/software_store.png" alt="Software Store" width="90%" />
+</p>
 
 ---
 
@@ -144,6 +161,10 @@ PocketCloud-এ রয়েছে একাধিক গ্লোবাল ক্�
 4. **ইন্টারনেট সিমুলেটরের বিল্ট-ইন SSH টার্মিনাল:**
    - ব্রাউজারের পাশেই রয়েছে ফুল-ফিচার্ড SSH টার্মিনাল।
    - এক ক্লিকে `Check Nginx`, `Reload Nginx`, `Curl Test Site`, `Copy Logs` রান করতে পারবেন।
+
+<p align="center">
+  <img src="docs/screenshots/internet_simulator.png" alt="Simulated Internet" width="90%" />
+</p>
 
 ---
 

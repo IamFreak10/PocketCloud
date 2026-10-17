@@ -11,6 +11,44 @@
 
 ---
 
+<div align="center">
+  <img src="docs/screenshots/pocketcloud_demo.gif" alt="PocketCloud Interactive Demo" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);" />
+  <p><em>⚡ <b>Live Interactive Demo:</b> Instant Ubuntu VPS, Simulated Global Internet, Visual Architecture & Zen Drawer Mode</em></p>
+</div>
+
+---
+
+## 📸 Visual Showcase
+
+<table>
+  <tr>
+    <td width="50%" align="center"><b>🖥️ Main Dashboard & Live Telemetry</b></td>
+    <td width="50%" align="center"><b>📐 Collapsible Drawer (Zen Mode Full-Width)</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/dashboard_main.png" alt="Main Dashboard" /></td>
+    <td><img src="docs/screenshots/zen_mode_drawer.png" alt="Zen Workspace Mode" /></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>📦 1-Click Ubuntu Software Store & APT Console</b></td>
+    <td width="50%" align="center"><b>🌐 Simulated Internet & Virtual DNS Browser</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/software_store.png" alt="Software Store" /></td>
+    <td><img src="docs/screenshots/internet_simulator.png" alt="Internet Simulator" /></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>🗺️ Interactive Network Topology Canvas</b></td>
+    <td width="50%" align="center"><b>🚀 Boot Initialization & Diagnostics Engine</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/architecture_topology.png" alt="Architecture Topology" /></td>
+    <td><img src="docs/screenshots/splash_diagnostics.png" alt="Diagnostics Engine" /></td>
+  </tr>
+</table>
+
+---
+
 ## 📥 Downloads & Releases (Latest: v0.1.5)
 
 | Platform | Format | Direct Download Link | Size |
