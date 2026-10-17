@@ -59,7 +59,86 @@
 | **Linux (Ubuntu/Debian)** | **Debian Package (.deb)** | [**PocketCloud_0.1.5_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud_0.1.5_amd64.deb) | 4.8 MB |
 | **Linux (Fedora/RHEL)** | **RPM Package (.rpm)** | [**PocketCloud-0.1.5-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5-1.x86_64.rpm) | 4.8 MB |
 
-👉 **Full Installation & Usage Guide**: [**USER_GUIDE.md**](USER_GUIDE.md)
+👉 **Detailed Bilingual Manual & FAQ**: [**USER_GUIDE.md**](USER_GUIDE.md)
+
+---
+
+## ⚡ Quick Start: Installation & Usage Guide
+
+> [!TIP]
+> **New to PocketCloud?** You can be up and running with a private Ubuntu 24.04 LTS cloud sandbox in **under 2 minutes**! For the complete step-by-step user manual with Bangla (বাংলা) translation and troubleshooting, see [**USER_GUIDE.md**](USER_GUIDE.md).
+
+### 1️⃣ Prerequisites (What you need)
+PocketCloud manages real, isolated Linux container environments locally:
+- **Windows 10 / 11:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed & running (with WSL 2 enabled).
+- **Linux (Ubuntu / Debian / Fedora):** Docker Engine installed & active:
+  ```bash
+  sudo systemctl enable --now docker && sudo usermod -aG docker $USER
+  ```
+- **Hardware:** 64-bit x86_64 CPU (Virtualization enabled in BIOS), minimum 4 GB RAM.
+
+---
+
+### 2️⃣ Installation Guide
+
+#### 🪟 Windows (Choose your preferred format):
+- **Option 1 (Setup Installer — Recommended):**
+  Download [**PocketCloud-Setup-0.1.5.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-Setup-0.1.5.exe) and run the setup wizard. Desktop & Start Menu shortcuts are created automatically.
+- **Option 2 (Portable Standalone):**
+  Download [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud.exe) and double-click to launch immediately without installing anything.
+- **Option 3 (MSI Enterprise Package):**
+  Download [**PocketCloud-0.1.5.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5.msi) for silent / administrator deployment.
+
+#### 🐧 Linux (Ubuntu / Debian / Fedora):
+- **Debian / Ubuntu (.deb):**
+  ```bash
+  sudo dpkg -i PocketCloud_0.1.5_amd64.deb
+  ```
+- **Fedora / RHEL / CentOS (.rpm):**
+  ```bash
+  sudo rpm -ivh PocketCloud-0.1.5-1.x86_64.rpm
+  ```
+
+#### 🧑‍💻 Run from Source (Developers):
+```bash
+# Clone the repository
+git clone https://github.com/IamFreak10/PocketCloud.git
+cd PocketCloud
+
+# Install frontend dependencies & run in development mode
+npm install
+npm run tauri dev
+```
+
+---
+
+### 3️⃣ How to Use PocketCloud (3-Step Quickstart)
+
+```text
+1. Launch App ──▶ 2. Start Ubuntu VPS ──▶ 3. Deploy & Inspect in Sandbox
+```
+
+#### Step 1: Launch the Application
+- Ensure Docker is running in the background.
+- Open **PocketCloud**. The app automatically verifies Docker daemon connectivity, loopback gateway ports, and virtual DNS resolver status.
+
+#### Step 2: Spin Up Your Ubuntu VPS
+- On the **Dashboard**, click the green **"Launch Ubuntu 24.04 VPS"** button (or navigate to **Ubuntu VPS Terminal** in the sidebar).
+- Within seconds, a native Ubuntu 24.04 LTS instance starts with an embedded root web terminal.
+- Test commands right away:
+  ```bash
+  uname -a
+  cat /etc/os-release
+  htop
+  ```
+
+#### Step 3: Install Stacks & Test Networks
+- **1-Click Software Store**: In **Ubuntu VPS Terminal** > **Software Store**, install **Nginx**, **Node.js LTS**, or **PM2** with a single click.
+- **Internet Simulator & DNS**: Switch to **Internet Simulator** to test local `.test` websites routed automatically through PocketCloud's built-in gateway (`127.0.0.1:18080`).
+- **Visual Architecture Topology**: Switch to **Architecture Topology** to view the live multi-node network map (Host Workstation ➜ DNS Engine ➜ Gateway ➜ VPS / Web / DB nodes).
+- **Collapsible Drawer (Zen Mode)**: Press `Ctrl + B` (or click `[Drawer]` at the top left) anytime to tuck away the sidebar and maximize your workspace.
+
+👉 **Looking for comprehensive command examples and in-depth troubleshooting?** Check [**USER_GUIDE.md**](USER_GUIDE.md).
 
 ---
 
