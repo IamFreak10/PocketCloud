@@ -24,8 +24,35 @@ export function App() {
   const [capabilities, setCapabilities] = useState<SystemCapabilities | null>(null);
   const [labs, setLabs] = useState<Lab[]>([]);
   const [currentLab, setCurrentLab] = useState<Lab | null>(null);
-  const [selectedComponentId, setSelectedComponentId] = useState<string | undefined>();
+  const [selectedComponentId, setSelectedComponentId] = useState<string | undefined>(() => {
+    return localStorage.getItem('pocketcloud_selected_comp_id') || undefined;
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleSelectComponent = (id: string) => {
+    setSelectedComponentId(id);
+    try {
+      localStorage.setItem('pocketcloud_selected_comp_id', id);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Automatically keep selectedComponentId locked on the active running VPS node
+  useEffect(() => {
+    if (!currentLab || currentLab.components.length === 0) return;
+    const current = currentLab.components.find((c) => c.id === selectedComponentId);
+    if (!current || current.status !== 'running') {
+      const best =
+        currentLab.components.find((c) => c.status === 'running' && (c.component_type === 'vps' || c.image.includes('ubuntu'))) ||
+        currentLab.components.find((c) => c.status === 'running') ||
+        currentLab.components.find((c) => c.component_type === 'vps' || c.image.includes('ubuntu')) ||
+        currentLab.components[0];
+      if (best && best.id !== selectedComponentId) {
+        handleSelectComponent(best.id);
+      }
+    }
+  }, [currentLab, selectedComponentId]);
 
   const handleRefreshCapabilities = async () => {
     try {
@@ -170,7 +197,7 @@ export function App() {
   };
 
   const handleOpenTerminalForComponent = (compId: string) => {
-    setSelectedComponentId(compId);
+    handleSelectComponent(compId);
     setCurrentTab('terminal');
   };
 
@@ -256,7 +283,7 @@ export function App() {
             <VpsManagerView
               components={currentLab?.components || []}
               selectedComponentId={selectedComponentId}
-              onSelectComponent={setSelectedComponentId}
+              onSelectComponent={handleSelectComponent}
               onStartComponent={handleStartComponent}
               onStopComponent={handleStopComponent}
             />

@@ -506,42 +506,68 @@ pub async fn exec_command(
         Err("Active QEMU VM not found for component".to_string())
     } else if runtime_mode == "docker" {
         let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-        for lab in labs {
-            for comp in lab.components {
-                if comp.id == component_id {
-                    if let Some(cid) = comp.container_id {
-                        let is_ubuntu = comp.image.contains("ubuntu");
-                        let shell = if is_ubuntu { "bash" } else { "sh" };
+        for mut lab in labs {
+            if let Some(pos) = lab.components.iter().position(|c| c.id == component_id) {
+                let comp_name = lab.components[pos].name.clone();
+                let comp_image = lab.components[pos].image.clone();
+                let container_name = format!("netlab_{}_{}", lab.id, component_id);
+                let target_ref = lab.components[pos]
+                    .container_id
+                    .clone()
+                    .unwrap_or(container_name.clone());
 
-                        let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
-                        let script = format!(
-                            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
+                let cid = match state.docker.ensure_active_container(&target_ref).await {
+                    Ok(id) => id,
+                    Err(_) => {
+                        if let Ok(id) = state.docker.ensure_active_container(&container_name).await {
+                            id
+                        } else if let Ok(id) = state.docker.ensure_active_container(&component_id).await {
+                            id
+                        } else {
+                            return Err(format!(
+                                "Active container not found for component '{}'. Please start the VPS.",
+                                comp_name
+                            ));
+                        }
+                    }
+                };
+
+                if lab.components[pos].container_id.as_deref() != Some(&cid) || lab.components[pos].status != "running" {
+                    lab.components[pos].container_id = Some(cid.clone());
+                    lab.components[pos].status = "running".to_string();
+                    let _ = state.db.save_lab(&lab);
+                }
+
+                let is_ubuntu = comp_image.contains("ubuntu");
+                let shell = if is_ubuntu { "bash" } else { "sh" };
+
+                    let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
+                    let script = format!(
+                        r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
 {}
 __NETLAB_EXIT_CODE=$?
 echo ""
 echo "__NETLAB_CWD__:$(pwd)"
 exit $__NETLAB_EXIT_CODE"#,
-                            initial_cwd, normalized_command
-                        );
+                        initial_cwd, normalized_command
+                    );
 
-                        let mut res = state
-                            .docker
-                            .exec_command(&cid, vec![shell, "-c", &script])
-                            .await?;
+                    let mut res = state
+                        .docker
+                        .exec_command(&cid, vec![shell, "-c", &script])
+                        .await?;
 
-                        if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {
-                            let (out, marker) = res.stdout.split_at(pos);
-                            let marker_line = marker.lines().next().unwrap_or("");
-                            let new_cwd = marker_line.trim_start_matches("__NETLAB_CWD__:").trim();
-                            res.cwd = Some(new_cwd.to_string());
-                            res.stdout = out.trim_end().to_string();
-                        } else {
-                            res.cwd = Some(initial_cwd);
-                        }
-
-                        return Ok(res);
+                    if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {
+                        let (out, marker) = res.stdout.split_at(pos);
+                        let marker_line = marker.lines().next().unwrap_or("");
+                        let new_cwd = marker_line.trim_start_matches("__NETLAB_CWD__:").trim();
+                        res.cwd = Some(new_cwd.to_string());
+                        res.stdout = out.trim_end().to_string();
+                    } else {
+                        res.cwd = Some(initial_cwd);
                     }
-                }
+
+                    return Ok(res);
             }
         }
         Err("Active container not found for component".to_string())

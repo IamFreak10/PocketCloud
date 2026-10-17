@@ -215,6 +215,26 @@ impl DockerManager {
         }
     }
 
+    pub async fn ensure_active_container(&self, container_name_or_id: &str) -> Result<String, String> {
+        let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
+        let inspect = docker
+            .inspect_container(container_name_or_id, None::<InspectContainerOptions>)
+            .await
+            .map_err(|e| format!("Container '{}' not found: {}", container_name_or_id, e))?;
+
+        let id = inspect.id.unwrap_or_else(|| container_name_or_id.to_string());
+        let is_running = inspect.state.and_then(|s| s.running).unwrap_or(false);
+
+        if !is_running {
+            let _ = docker
+                .start_container(&id, None::<StartContainerOptions<String>>)
+                .await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
+        }
+
+        Ok(id)
+    }
+
     pub async fn ping(&self) -> Result<(), String> {
         let docker = self.client.as_ref().ok_or("Docker client not initialized")?;
         docker

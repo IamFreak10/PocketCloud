@@ -41,7 +41,12 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const cursorPos = useRef<number>(0);
   const isExecuting = useRef<boolean>(false);
 
-  const activeComp = components.find((c) => c.id === selectedComponentId) || components[0];
+  const activeComp =
+    components.find((c) => c.id === selectedComponentId) ||
+    components.find((c) => c.status === 'running' && (c.component_type === 'vps' || c.image.includes('ubuntu'))) ||
+    components.find((c) => c.status === 'running') ||
+    components.find((c) => c.component_type === 'vps' || c.image.includes('ubuntu')) ||
+    components[0];
 
   const getDisplayPath = (rawPath: string) => {
     if (rawPath === '/root' || rawPath === '/home/netlab') return '~';
@@ -80,6 +85,9 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
     term.writeln('  Memory usage: \x1b[1;32m8%\x1b[0m                  IPv4 address for eth0: \x1b[1;36m' + (activeComp?.ip_address || '172.17.0.2') + '\x1b[0m\r\n');
     if (activeComp?.runtime_mode === 'qemu') {
       term.writeln(' * QEMU guest VM selected. Login user: netlab.\r\n');
+    } else if (activeComp?.status !== 'running') {
+      term.writeln(` \x1b[1;33m⚠️ Node "${activeComp?.name || activeComp?.id}" (${activeComp?.image}) is currently STOPPED.\x1b[0m`);
+      term.writeln(' \x1b[90m👉 Running any command will automatically launch the container.\x1b[0m\r\n');
     } else {
       term.writeln(' * Ubuntu 24.04 LTS Full VPS (' + (activeComp?.image || 'netlab/ubuntu-vps:24.04') + ') — running\r\n');
     }

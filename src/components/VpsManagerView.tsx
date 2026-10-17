@@ -205,7 +205,12 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
     }
   };
 
-  const activeComp = components.find((c) => c.id === selectedComponentId) || components[0];
+  const activeComp =
+    components.find((c) => c.id === selectedComponentId) ||
+    components.find((c) => c.status === 'running' && (c.component_type === 'vps' || c.image.includes('ubuntu'))) ||
+    components.find((c) => c.status === 'running') ||
+    components.find((c) => c.component_type === 'vps' || c.image.includes('ubuntu')) ||
+    components[0];
   const isRunning = activeComp?.status === 'running';
 
   const sshPort = activeComp?.host_port || 18022;
