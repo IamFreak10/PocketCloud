@@ -293,7 +293,14 @@ pub async fn start_component(
             None // Nginx runs its default CMD
         } else if actual_image.contains("ubuntu-vps") {
             let port_str = host_port_opt.unwrap_or(18022).to_string();
-            Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string(), "-p".to_string(), port_str])
+            Some(vec![
+                "sh".to_string(),
+                "-c".to_string(),
+                format!(
+                    "if [ ! -x /usr/sbin/sshd ]; then apt-get update && apt-get install -y --no-install-recommends openssh-server sudo && mkdir -p /var/run/sshd && echo 'root:netlab123' | chpasswd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config; fi; if [ -x /usr/sbin/sshd ]; then /usr/sbin/sshd -D -p {}; else sleep infinity; fi",
+                    port_str
+                ),
+            ])
         } else if actual_image.contains("ubuntu") {
             Some(vec!["sleep".to_string(), "infinity".to_string()])
         } else {

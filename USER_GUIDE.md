@@ -8,11 +8,11 @@ PocketCloud হল আপনার কম্পিউটারে লোকা�
 
 | প্ল্যাটফর্ম | প্যাকেজের ধরণ | ডাউনলোড লিংক | সাইজ |
 |---|---|---|---|
-| **Windows 10 / 11** | Setup Installer (.exe) | [**PocketCloud-Setup-0.1.0.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.1/PocketCloud-Setup-0.1.0.exe) | 4.3 MB |
-| **Windows 10 / 11** | MSI Package (.msi) | [**PocketCloud-0.1.0.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.1/PocketCloud-0.1.0.msi) | 4.3 MB |
-| **Windows 10 / 11** | Portable Standalone (.exe) | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.1/PocketCloud.exe) | 8.4 MB |
-| **Linux (Ubuntu/Debian)** | Debian Package (.deb) | [**PocketCloud_0.1.0_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.1/PocketCloud_0.1.0_amd64.deb) | 4.8 MB |
-| **Linux (Fedora/RHEL)** | RPM Package (.rpm) | [**PocketCloud-0.1.0-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.1/PocketCloud-0.1.0-1.x86_64.rpm) | 4.8 MB |
+| **Windows 10 / 11** | Setup Installer (.exe) | [**PocketCloud-Setup-0.1.0.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.2/PocketCloud-Setup-0.1.0.exe) | 4.3 MB |
+| **Windows 10 / 11** | MSI Package (.msi) | [**PocketCloud-0.1.0.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.2/PocketCloud-0.1.0.msi) | 4.3 MB |
+| **Windows 10 / 11** | Portable Standalone (.exe) | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.2/PocketCloud.exe) | 8.4 MB |
+| **Linux (Ubuntu/Debian)** | Debian Package (.deb) | [**PocketCloud_0.1.0_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.2/PocketCloud_0.1.0_amd64.deb) | 4.8 MB |
+| **Linux (Fedora/RHEL)** | RPM Package (.rpm) | [**PocketCloud-0.1.0-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.2/PocketCloud-0.1.0-1.x86_64.rpm) | 4.8 MB |
 
 ---
 
