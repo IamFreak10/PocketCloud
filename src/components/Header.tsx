@@ -1,33 +1,51 @@
 import React from 'react';
-import { Cpu, HardDrive, Globe, ShieldCheck, Box, Sparkles, ExternalLink } from 'lucide-react';
+import { Cpu, HardDrive, Globe, ShieldCheck, Box, Sparkles, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import { SystemCapabilities } from '../types';
 
 interface HeaderProps {
   capabilities: SystemCapabilities | null;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
+export const Header: React.FC<HeaderProps> = ({ capabilities, isSidebarOpen = true, onToggleSidebar }) => {
   return (
     <header className="h-16 bg-[#FAF7EE] border-b-2 border-stone-900 flex items-center justify-between px-6 select-none shrink-0 shadow-[0_2px_0px_#18181B] z-20">
-      {/* Brand with Retro Window Controls */}
-      <div className="flex items-center gap-4">
+      {/* Brand with Retro Window Controls and Drawer Toggle */}
+      <div className="flex items-center gap-3 md:gap-4">
         {/* Retro Window Dot Controls */}
-        <div className="retro-dots">
+        <div className="retro-dots hidden sm:flex">
           <span className="retro-dot retro-dot-red" title="Close" />
           <span className="retro-dot retro-dot-yellow" title="Minimize" />
           <span className="retro-dot retro-dot-green" title="Expand" />
         </div>
 
-        <div className="h-6 w-[2px] bg-stone-900/20" />
+        {/* Navigation Drawer Toggle Button */}
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="retro-btn px-2.5 py-1.5 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 text-xs font-black gap-1.5 shadow-[2px_2px_0px_#18181B] active:translate-x-[1px] active:translate-y-[1px]"
+            title={isSidebarOpen ? 'Collapse Navigation Drawer (Ctrl+B)' : 'Expand Navigation Drawer (Ctrl+B)'}
+          >
+            {isSidebarOpen ? (
+              <PanelLeftClose className="w-4 h-4 text-stone-900" />
+            ) : (
+              <PanelLeftOpen className="w-4 h-4 text-stone-900" />
+            )}
+            <span className="hidden md:inline text-[11px] font-mono font-bold">Drawer</span>
+          </button>
+        )}
+
+        <div className="h-6 w-[2px] bg-stone-900/20 hidden sm:block" />
 
         <div className="flex items-center gap-3">
-          <div className="h-12 px-3.5 bg-white rounded-2xl border-2 border-stone-900 flex items-center gap-3 shadow-[3px_3px_0px_#18181B] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#18181B] transition-all cursor-default">
-            {/* Wide, Prominent PocketCloud Brand Lockup */}
+          {/* Elongated, Prominent PocketCloud Brand Header Lockup */}
+          <div className="h-12 px-4 bg-white rounded-2xl border-2 border-stone-900 flex items-center gap-3.5 shadow-[3px_3px_0px_#18181B] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#18181B] transition-all cursor-default">
             <img 
               src="/pocketcloud-logo-transparent.png" 
               alt="PocketCloud" 
-              className="h-8 md:h-9 w-auto max-w-[220px] object-contain select-none" 
+              className="h-8 md:h-10 w-auto max-w-[260px] md:max-w-[300px] object-contain select-none drop-shadow-sm" 
             />
 
             {/* Version Badge */}

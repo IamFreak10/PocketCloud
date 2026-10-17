@@ -15,6 +15,7 @@ import {
   Activity,
   Heart,
   Sparkles,
+  PanelLeftClose,
 } from 'lucide-react';
 import { APP_VERSION } from '../version';
 
@@ -36,9 +37,10 @@ interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   activeLabCount: number;
+  onToggleSidebar?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, activeLabCount }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, activeLabCount, onToggleSidebar }) => {
   const menuItems = [
     { id: 'dashboard' as NavTab, label: 'Dashboard', icon: LayoutDashboard, color: '#C7F9CC' },
     { id: 'designer' as NavTab, label: 'Architecture Topology', icon: Network, color: '#BAE6FD' },
@@ -55,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, activ
   ];
 
   return (
-    <aside className="w-64 bg-[#FAF7EE] border-r-2 border-stone-900 flex flex-col justify-between p-3 select-none shrink-0 shadow-[2px_0_0px_#18181B] z-10">
+    <aside className="w-64 bg-[#FAF7EE] border-r-2 border-stone-900 flex flex-col justify-between p-3 select-none shrink-0 shadow-[2px_0_0px_#18181B] z-10 h-full">
       <div className="space-y-1.5 overflow-y-auto pr-1">
         {/* PocketCloud Brand Banner */}
         <div className="mb-3 p-3 bg-white rounded-2xl border-2 border-stone-900 shadow-[3px_3px_0px_#18181B] group hover:-translate-y-0.5 transition-all">
@@ -64,8 +66,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, activ
               <img 
                 src="/pocketcloud-logo-transparent.png" 
                 alt="PocketCloud" 
-                className="h-8.5 w-auto max-w-[195px] object-contain select-none" 
+                className="h-8.5 w-auto max-w-[170px] object-contain select-none" 
               />
+              {onToggleSidebar && (
+                <button
+                  onClick={onToggleSidebar}
+                  title="Collapse Drawer (Ctrl+B)"
+                  className="p-1.5 rounded-lg hover:bg-stone-100 border border-transparent hover:border-stone-900/30 transition-all text-stone-600 hover:text-stone-900 cursor-pointer"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-stone-900/10">
               <div className="flex items-center gap-1.5">

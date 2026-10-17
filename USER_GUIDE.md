@@ -4,15 +4,15 @@ PocketCloud হল আপনার কম্পিউটারে লোকা�
 
 ---
 
-## 📥 দ্রুত ডাউনলোড লিংকসমূহ (Direct Download Links)
+## 📥 দ্রুত ডাউনলোড লিংকসমূহ (Direct Download Links — v0.1.5)
 
 | প্ল্যাটফর্ম | প্যাকেজের ধরণ | ডাউনলোড লিংক | সাইজ |
 |---|---|---|---|
-| **Windows 10 / 11** | Setup Installer (.exe) | [**PocketCloud-Setup-0.1.3.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-Setup-0.1.3.exe) | 8.8 MB |
-| **Windows 10 / 11** | Portable Standalone (.exe) | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud.exe) | 13.0 MB |
-| **Windows 10 / 11** | MSI Package (.msi) | [**PocketCloud-0.1.3.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-0.1.3.msi) | 4.3 MB |
-| **Linux (Ubuntu/Debian)** | Debian Package (.deb) | [**PocketCloud_0.1.3_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud_0.1.3_amd64.deb) | 4.8 MB |
-| **Linux (Fedora/RHEL)** | RPM Package (.rpm) | [**PocketCloud-0.1.3-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-0.1.3-1.x86_64.rpm) | 4.8 MB |
+| **Windows 10 / 11** | Setup Installer (.exe) | [**PocketCloud-Setup-0.1.5.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-Setup-0.1.5.exe) | 8.8 MB |
+| **Windows 10 / 11** | Portable Standalone (.exe) | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud.exe) | 13.0 MB |
+| **Windows 10 / 11** | MSI Package (.msi) | [**PocketCloud-0.1.5.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5.msi) | 4.3 MB |
+| **Linux (Ubuntu/Debian)** | Debian Package (.deb) | [**PocketCloud_0.1.5_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud_0.1.5_amd64.deb) | 4.8 MB |
+| **Linux (Fedora/RHEL)** | RPM Package (.rpm) | [**PocketCloud-0.1.5-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5-1.x86_64.rpm) | 4.8 MB |
 
 ---
 
@@ -55,20 +55,20 @@ PocketCloud সম্পূর্ণ আইসোলেটেড লিনাক
 
 ### 🪟 Windows ইনস্টলেশন:
 - **অপশন ১ (সবচেয়ে সহজ - Setup Wizard):**
-  `PocketCloud-Setup-0.1.0.exe` ডাউনলোড করে ডাবল ক্লিক করুন -> `Next` -> `Install`। ডেস্কটপ ও স্টার্ট মেন্যুতে স্বয়ংক্রিয়ভাবে শর্টকাট তৈরি হবে।
+  `PocketCloud-Setup-0.1.5.exe` ডাউনলোড করে ডাবল ক্লিক করুন -> `Next` -> `Install`। ডেস্কটপ ও স্টার্ট মেন্যুতে স্বয়ংক্রিয়ভাবে শর্টকাট তৈরি হবে।
 - **অপশন ২ (MSI Installer):**
-  `PocketCloud-0.1.0.msi` ডাবল ক্লিক করলেই সাইলেন্টলি `C:\Program Files\PocketCloud` এ ইনস্টল হয়ে যাবে।
+  `PocketCloud-0.1.5.msi` ডাবল ক্লিক করলেই সাইলেন্টলি `C:\Program Files\PocketCloud` এ ইনস্টল হয়ে যাবে।
 - **অপশন ৩ (পোর্টেবল মোড):**
   `PocketCloud.exe` ডাউনলোড করে কোনো ইনস্টলেশন ছাড়াই সরাসরি রান করা যায় (পেনড্রাইভেও বহনযোগ্য)।
 
 ### 🐧 Linux ইনস্টলেশন:
 - **Ubuntu / Debian (.deb):**
   ```bash
-  sudo dpkg -i PocketCloud_0.1.0_amd64.deb
+  sudo dpkg -i PocketCloud_0.1.5_amd64.deb
   ```
 - **Fedora / RHEL (.rpm):**
   ```bash
-  sudo rpm -i PocketCloud-0.1.0-1.x86_64.rpm
+  sudo rpm -i PocketCloud-0.1.5-1.x86_64.rpm
   ```
 
 ---
@@ -83,7 +83,16 @@ PocketCloud ওপেন করার সাথে সাথেই একটি 
 
 ---
 
-### 🚀 ধাপ ২: ক্লিন উবুন্টু VPS লঞ্চ করা
+### 📂 ধাপ ২: কোলাপসিবল ড্রয়ার সিস্টেম (Full-Screen Workspace / Drawer Toggle)
+v0.1.5 এ সংযুক্ত হয়েছে ফ্লুইড ও রেট্রো **Collapsible Navigation Drawer**:
+- **সাইডবার অন/অফ করা:** টপবারের বামপাশে থাকা **`[Drawer]`** বাটনে ক্লিক করে যেকোনো সময় সাইডবার অন বা অফ করা যায়।
+- **কীবোর্ড শর্টকাট:** যেকোনো স্ক্রিনে থাকা অবস্থায় **`Ctrl + B`** (ম্যাকে `Cmd + B`) চাপলেই নিমেষেই সাইডবার স্লাইড হয়ে লুকিয়ে যাবে এবং পুরো ড্যাশবোর্ড বা টার্মিনাল ১০০% ফুল-স্ক্রিন প্রশস্ততায় ছড়িয়ে পড়বে।
+- **রি-ওপেন করা:** সাইডবার হাইড থাকলে ড্যাশবোর্ডের বাম কোণায় থাকা **`[Menu]`** বাটনে অথবা টপবারের **`[Drawer]`** বাটনে ক্লিক করলেই ড্রয়ার মসৃণভাবে আবার ফিরে আসবে।
+- আপনার ড্রয়ার অন/অফ পছন্দের স্টেট স্বয়ংক্রিয়ভাবে সেভ থাকে।
+
+---
+
+### 🚀 ধাপ ৩: ক্লিন উবুন্টু VPS লঞ্চ করা
 - ড্যাশবোর্ডে থাকা **`"Launch Clean Ubuntu VPS"`** বাটনে ক্লিক করুন।
 - এটি তাৎক্ষণিকভাবে ব্যাকগ্রাউন্ডে একটি একদম নতুন, ফ্রেশ **Ubuntu 24.04 LTS** ক্লাউড VPS ইনস্ট্যান্স রান করবে।
 - **স্মার্ট অটো-পুল:** আপনার পিসিতে আগে থেকে কোনো ইমেজ তৈরি করতে হবে না—PocketCloud নিজে ব্যাকগ্রাউন্ডে অফিশিয়াল ডকার হাব থেকে উবুন্টু ইমেজ নামিয়ে SSH সার্ভার ও রুট অ্যাক্সেস কনফিগার করে নেয়।
@@ -91,7 +100,7 @@ PocketCloud ওপেন করার সাথে সাথেই একটি 
 
 ---
 
-### 💻 ধাপ ৩: রুট টার্মিনালে কাজ করা
+### 💻 ধাপ ৪: রুট টার্মিনালে কাজ করা
 PocketCloud-এর ভেতরেই একটি হাই-এন্ড ডার্ক লিনাক্স টার্মিনাল দেওয়া আছে:
 - বামপাশের সাইডবার থেকে **`Ubuntu VPS Terminal`**-এ ক্লিক করুন।
 - সরাসরি উবুন্টুর রুট টার্মিনাল চালু হয়ে যাবে:
@@ -106,7 +115,7 @@ PocketCloud-এর ভেতরেই একটি হাই-এন্ড ডা
 
 ---
 
-### 🔑 ধাপ ৪: বাইরের টার্মিনাল থেকে SSH দিয়ে লগইন করা (PowerShell / PuTTY / Linux)
+### 🔑 ধাপ ৫: বাইরের টার্মিনাল থেকে SSH দিয়ে লগইন করা (PowerShell / PuTTY / Linux)
 PocketCloud এর VPS পোর্ট `18022`-এ লাইভ OpenSSH সার্ভার রান করে।
 আপনার নিজস্ব কম্পিউটারের টার্মিনাল (PowerShell / CMD / Linux Bash) থেকেও লগইন করতে পারেন:
 ```bash
@@ -119,7 +128,7 @@ ssh -p 18022 root@127.0.0.1
 
 ---
 
-### 🌐 ধাপ ৫: ইন্টারনেট সিমুলেটর ও কাস্টম ডোমেইন টেস্ট (Simulated Internet)
+### 🌐 ধাপ ৬: ইন্টারনেট সিমুলেটর ও কাস্টম ডোমেইন টেস্ট (Simulated Internet)
 PocketCloud-এ রয়েছে একাধিক গ্লোবাল ক্লায়েন্ট এজ স্টেশনসহ ইন্টারনেট সিমুলেটর:
 1. **VPS-এ ওয়েবসাইট রান করুন:** উবুন্টু VPS-এর ভেতর Nginx বা যেকোনো ওয়েব সার্ভিস চালান:
    ```bash
@@ -138,7 +147,7 @@ PocketCloud-এ রয়েছে একাধিক গ্লোবাল ক্�
 
 ---
 
-### 🖥️ ধাপ ৬: লোকাল পিসি ব্রাউজার দিয়ে অ্যাক্সেস (Host Gateway)
+### 🖥️ ধাপ ৭: লোকাল পিসি ব্রাউজার দিয়ে অ্যাক্সেস (Host Gateway)
 যদি আপনি আপনার পিসির ক্রোম (Google Chrome) বা এজ (Edge) ব্রাউজার দিয়ে ল্যাবের সাইট দেখতে চান:
 - পিসির ব্রাউজারে যান: `http://127.0.0.1:18080`
 - PocketCloud এর নিজস্ব রিভার্স প্রক্সি সরাসরি হোস্ট ব্রাউজার ট্রাফিককে ভেতরের ল্যাব কন্টেইনারে ফরোয়ার্ড করবে।
@@ -149,6 +158,7 @@ PocketCloud-এ রয়েছে একাধিক গ্লোবাল ক্�
 
 | ফিচার | বিস্তারিত তথ্য |
 |------|---------------|
+| **Navigation Drawer Toggle** | Topbar **`[Drawer]`** বাटन বা **`Ctrl + B`** (ফুল-স্ক্রিন মোড) |
 | **Default SSH Port** | `18022` |
 | **Default SSH User** | `root` |
 | **Default SSH Password** | `netlab123` |

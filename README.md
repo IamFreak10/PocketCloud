@@ -11,15 +11,15 @@
 
 ---
 
-## 📥 Downloads & Releases (Latest: v0.1.3)
+## 📥 Downloads & Releases (Latest: v0.1.5)
 
 | Platform | Format | Direct Download Link | Size |
 |---|---|---|---|
-| **Windows 10 / 11** | **Setup Installer (.exe)** | [**PocketCloud-Setup-0.1.3.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-Setup-0.1.3.exe) | 8.8 MB |
-| **Windows 10 / 11** | **Portable Standalone (.exe)** | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud.exe) | 13.0 MB |
-| **Windows 10 / 11** | **MSI Package (.msi)** | [**PocketCloud-0.1.3.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-0.1.3.msi) | 4.3 MB |
-| **Linux (Ubuntu/Debian)** | **Debian Package (.deb)** | [**PocketCloud_0.1.3_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud_0.1.3_amd64.deb) | 4.8 MB |
-| **Linux (Fedora/RHEL)** | **RPM Package (.rpm)** | [**PocketCloud-0.1.3-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.3/PocketCloud-0.1.3-1.x86_64.rpm) | 4.8 MB |
+| **Windows 10 / 11** | **Setup Installer (.exe)** | [**PocketCloud-Setup-0.1.5.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-Setup-0.1.5.exe) | 8.8 MB |
+| **Windows 10 / 11** | **Portable Standalone (.exe)** | [**PocketCloud.exe**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud.exe) | 13.0 MB |
+| **Windows 10 / 11** | **MSI Package (.msi)** | [**PocketCloud-0.1.5.msi**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5.msi) | 4.3 MB |
+| **Linux (Ubuntu/Debian)** | **Debian Package (.deb)** | [**PocketCloud_0.1.5_amd64.deb**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud_0.1.5_amd64.deb) | 4.8 MB |
+| **Linux (Fedora/RHEL)** | **RPM Package (.rpm)** | [**PocketCloud-0.1.5-1.x86_64.rpm**](https://github.com/IamFreak10/PocketCloud/releases/download/v0.1.5/PocketCloud-0.1.5-1.x86_64.rpm) | 4.8 MB |
 
 👉 **Full Installation & Usage Guide**: [**USER_GUIDE.md**](USER_GUIDE.md)
 
@@ -130,6 +130,11 @@ graph TB
 ### 8. 🗄️ Embedded SQLite State Engine (`src-tauri/src/db.rs`)
 - Embedded SQLite storage with automatic schema migrations.
 - Stores custom lab configurations, user preferences, domain records, and historical deployment logs.
+
+### 9. 📐 Collapsible Navigation Drawer & Zen Workspace
+- **1-Click Sidebar Toggle**: Collapse the left navigation panel using the topbar **`[Drawer]`** button or global hotkey **`Ctrl + B`** (`Cmd + B` on macOS) to expand the dashboard, architecture topology, and terminal views into distraction-free full-width mode.
+- **Floating Reopen Trigger**: Access navigation anytime via the retro floating **`[Menu]`** trigger when the drawer is tucked away.
+- **Persistent State**: Automatically remembers user's drawer toggle preference across sessions.
 
 ---
 

@@ -15,6 +15,7 @@ import { NetworkTesterView } from './components/NetworkTesterView';
 import { MissionsView } from './components/MissionsView';
 import { SettingsView } from './components/SettingsView';
 import { LoadingScreen } from './components/LoadingScreen';
+import { PanelLeftOpen } from 'lucide-react';
 import { Lab, LabComponent, SystemCapabilities } from './types';
 import { api } from './services/api';
 
@@ -27,7 +28,38 @@ export function App() {
   const [selectedComponentId, setSelectedComponentId] = useState<string | undefined>(() => {
     return localStorage.getItem('pocketcloud_selected_comp_id') || undefined;
   });
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('pocketcloud_sidebar_open') !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('pocketcloud_sidebar_open', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Allow Ctrl+B or Cmd+B to toggle drawer
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSelectComponent = (id: string) => {
     setSelectedComponentId(id);
@@ -229,19 +261,42 @@ export function App() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0b0f19] text-white">
       {/* Top Navbar */}
-      <Header capabilities={capabilities} />
+      <Header
+        capabilities={capabilities}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+      />
 
       {/* Main Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <Sidebar
-          currentTab={currentTab}
-          onSelectTab={setCurrentTab}
-          activeLabCount={activeLabCount}
-        />
+        {/* Collapsible Left Navigation Drawer */}
+        <div
+          className={`transition-all duration-300 ease-in-out shrink-0 overflow-hidden flex flex-col ${
+            isSidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+          }`}
+        >
+          <Sidebar
+            currentTab={currentTab}
+            onSelectTab={setCurrentTab}
+            activeLabCount={activeLabCount}
+            onToggleSidebar={toggleSidebar}
+          />
+        </div>
 
         {/* Dynamic Center Viewport */}
         <main className="flex-1 overflow-hidden relative bg-[#FAF7EE]">
+          {/* Reopen Drawer Floating Button (when drawer is collapsed) */}
+          {!isSidebarOpen && (
+            <button
+              onClick={toggleSidebar}
+              className="absolute top-4 left-4 z-40 px-3 py-2 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 rounded-xl border-2 border-stone-900 shadow-[3px_3px_0px_#18181B] flex items-center gap-1.5 text-xs font-mono font-black transition-all hover:scale-105 active:translate-x-[1px] active:translate-y-[1px] cursor-pointer"
+              title="Open Navigation Drawer (Ctrl+B)"
+            >
+              <PanelLeftOpen className="w-4 h-4 text-stone-900" />
+              <span>Menu</span>
+            </button>
+          )}
+
           <div className={currentTab === 'dashboard' ? 'h-full flex flex-col overflow-y-auto' : 'hidden'}>
             <DashboardView
               labs={labs}

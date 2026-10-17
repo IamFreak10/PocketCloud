@@ -139,18 +139,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             </div>
           </div>
-
-          {/* PocketCloud Mascot Hero Showcase Card */}
-          <div className="hidden lg:flex flex-col items-center justify-center p-5 bg-white border-2 border-stone-900 rounded-2xl shadow-[4px_4px_0px_#18181B] -rotate-1 hover:rotate-0 transition-all duration-300 shrink-0 w-80">
-            <div className="w-28 h-28 bg-[#FEF08A] rounded-2xl border-2 border-stone-900 p-2 shadow-[3px_3px_0px_#18181B] flex items-center justify-center mb-3">
-              <img src="/pocketcloud-mascot.png" alt="PocketCloud Mascot" className="w-full h-full object-contain filter drop-shadow" />
-            </div>
-            <img src="/pocketcloud-logo-transparent.png" alt="PocketCloud" className="h-9 w-auto max-w-[240px] object-contain mb-2 select-none" />
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#BAE6FD] border border-stone-900 text-[10px] font-mono font-black text-stone-900 shadow-[1px_1px_0px_#18181B]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse border border-stone-900" />
-              <span>100% Offline & Isolated</span>
-            </div>
-          </div>
         </div>
       </div>
 
