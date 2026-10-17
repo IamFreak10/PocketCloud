@@ -16,8 +16,37 @@ pub struct DockerManager {
 
 impl DockerManager {
     pub fn new() -> Self {
-        let client = Docker::connect_with_local_defaults().ok();
-        DockerManager { client }
+        if let Ok(client) = Docker::connect_with_local_defaults() {
+            return DockerManager { client: Some(client) };
+        }
+
+        #[cfg(unix)]
+        {
+            let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+            if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+                candidates.push(std::path::PathBuf::from(xdg).join("docker.sock"));
+            }
+            if let Ok(home) = std::env::var("HOME") {
+                let h = std::path::PathBuf::from(home);
+                candidates.push(h.join(".docker/desktop/docker.sock"));
+                candidates.push(h.join(".docker/run/docker.sock"));
+            }
+            candidates.push(std::path::PathBuf::from("/var/run/docker.sock"));
+
+            for path in candidates {
+                if path.exists() {
+                    if let Ok(client) = Docker::connect_with_unix(
+                        path.to_string_lossy().as_ref(),
+                        120,
+                        bollard::API_DEFAULT_VERSION,
+                    ) {
+                        return DockerManager { client: Some(client) };
+                    }
+                }
+            }
+        }
+
+        DockerManager { client: None }
     }
 
     pub fn is_available(&self) -> bool {
@@ -123,6 +152,7 @@ impl DockerManager {
             image: Some(image.to_string()),
             hostname: Some("ubuntu-24".to_string()),
             cmd: cmd.clone(),
+            working_dir: Some("/root".to_string()),
             env: Some(env),
             exposed_ports: if is_host_net { None } else { Some(exposed_ports) },
             host_config: Some(host_config),
@@ -215,6 +245,14 @@ impl DockerManager {
         }
     }
 
+    pub async fn inspect_container(&self, container_id: &str) -> Result<bollard::models::ContainerInspectResponse, String> {
+        let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
+        docker
+            .inspect_container(container_id, None::<InspectContainerOptions>)
+            .await
+            .map_err(|e| format!("Failed to inspect container: {}", e))
+    }
+
     pub async fn ensure_active_container(&self, container_name_or_id: &str) -> Result<String, String> {
         let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
         let inspect = docker
@@ -273,6 +311,7 @@ impl DockerManager {
             cmd: Some(cmd.iter().map(|s| s.to_string()).collect()),
             attach_stdout: Some(true),
             attach_stderr: Some(true),
+            working_dir: Some("/root".to_string()),
             ..Default::default()
         };
 

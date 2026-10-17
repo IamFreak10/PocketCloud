@@ -34,24 +34,24 @@ pub async fn list_labs(state: State<'_, AppState>) -> Result<Vec<Lab>, String> {
     for lab in &mut labs {
         let mut lab_changed = false;
         for comp in &mut lab.components {
-            if comp.status == "running" {
-                if comp.runtime_mode == "docker" {
-                    let running = if let Some(cid) = &comp.container_id {
-                        state.docker.is_container_running(cid).await
-                    } else {
-                        false
-                    };
-                    if !running {
+            if comp.runtime_mode == "docker" {
+                if let Some(cid) = &comp.container_id {
+                    let running = state.docker.is_container_running(cid).await;
+                    if running && comp.status != "running" {
+                        comp.status = "running".to_string();
+                        lab_changed = true;
+                    } else if !running && comp.status == "running" {
                         comp.status = "stopped".to_string();
-                        comp.container_id = None;
                         lab_changed = true;
                     }
-                } else if comp.runtime_mode == "qemu" {
-                    if !state.qemu.is_running(&comp.id) {
-                        comp.status = "stopped".to_string();
-                        comp.container_id = None;
-                        lab_changed = true;
-                    }
+                } else if comp.status == "running" {
+                    comp.status = "stopped".to_string();
+                    lab_changed = true;
+                }
+            } else if comp.runtime_mode == "qemu" {
+                if !state.qemu.is_running(&comp.id) && comp.status == "running" {
+                    comp.status = "stopped".to_string();
+                    lab_changed = true;
                 }
             }
         }
@@ -173,13 +173,41 @@ pub async fn create_lab(
             });
         } else if tmpl == "ubuntu" || tmpl == "ubuntu-vps" {
             let vps_id = format!("vps-{}", &Uuid::new_v4().to_string()[..6]);
+            let host_ssh_port = find_available_port(18022);
+            let mut status = "stopped".to_string();
+            let mut container_id = None;
+            let mut ip_address = None;
+
             let (runtime_mode, image) = if is_docker {
-                ("docker".to_string(), "netlab/ubuntu-vps:24.04".to_string())
+                ("docker".to_string(), "ubuntu:24.04".to_string())
             } else if state.qemu.is_available() {
                 ("qemu".to_string(), "ubuntu:24.04".to_string())
             } else {
-                ("simulated".to_string(), "ubuntu:24.04".to_string())
+                ("docker".to_string(), "ubuntu:24.04".to_string())
             };
+
+            if is_docker {
+                let container_name = format!("netlab_{}_{}", lab_id, vps_id);
+                if let Ok((cid, ip)) = state
+                    .docker
+                    .start_container(
+                        &container_name,
+                        "ubuntu:24.04",
+                        Some(host_ssh_port),
+                        Some(22),
+                        vec!["NETLAB=true".to_string()],
+                        Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                        Some("bridge".to_string()),
+                    )
+                    .await
+                {
+                    container_id = Some(cid);
+                    ip_address = ip;
+                    status = "running".to_string();
+                    state.gateway.register_component(&vps_id, host_ssh_port);
+                }
+            }
+
             components.push(LabComponent {
                 id: vps_id.clone(),
                 lab_id: lab_id.clone(),
@@ -187,10 +215,10 @@ pub async fn create_lab(
                 component_type: "vps".to_string(),
                 runtime_mode,
                 image,
-                status: "stopped".to_string(),
-                container_id: None,
-                ip_address: None,
-                host_port: Some(18022),
+                status,
+                container_id,
+                ip_address,
+                host_port: Some(host_ssh_port),
                 container_port: Some(22),
                 created_at: now.clone(),
             });
@@ -270,15 +298,15 @@ pub async fn start_component(
                 let vps_ssh_port = find_available_port(comp.host_port.unwrap_or(18022));
                 (
                     Some(vps_ssh_port),
-                    Some(vps_ssh_port),
-                    "host".to_string(),
+                    Some(comp.container_port.unwrap_or(22)),
+                    "bridge".to_string(),
                 )
             }
             _ => (comp.host_port.map(find_available_port), comp.container_port, "bridge".to_string()),
         };
 
-        let actual_image = if comp.component_type == "vps" && comp.image.contains("ubuntu") {
-            "netlab/ubuntu-vps:24.04".to_string()
+        let actual_image = if comp.component_type == "vps" && (comp.image.contains("ubuntu") || comp.image.is_empty()) {
+            "ubuntu:24.04".to_string()
         } else {
             comp.image.clone()
         };
@@ -291,18 +319,6 @@ pub async fn start_component(
             None
         } else if comp.component_type == "web" {
             None // Nginx runs its default CMD
-        } else if actual_image.contains("ubuntu-vps") {
-            let port_str = host_port_opt.unwrap_or(18022).to_string();
-            Some(vec![
-                "sh".to_string(),
-                "-c".to_string(),
-                format!(
-                    "if [ ! -x /usr/sbin/sshd ]; then apt-get update && apt-get install -y --no-install-recommends openssh-server sudo && mkdir -p /var/run/sshd && echo 'root:netlab123' | chpasswd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config; fi; if [ -x /usr/sbin/sshd ]; then /usr/sbin/sshd -D -p {}; else sleep infinity; fi",
-                    port_str
-                ),
-            ])
-        } else if actual_image.contains("ubuntu") {
-            Some(vec!["sleep".to_string(), "infinity".to_string()])
         } else {
             Some(vec!["sleep".to_string(), "infinity".to_string()])
         };
@@ -420,7 +436,6 @@ pub async fn stop_component(
     }
 
     comp.status = "stopped".to_string();
-    comp.container_id = None;
 
     let mut updated_lab = lab;
     if let Some(pos) = updated_lab.components.iter().position(|c| c.id == comp.id) {
@@ -466,8 +481,42 @@ pub async fn add_component(
     } else if state.qemu.is_available() && image.contains("ubuntu") {
         "qemu".to_string()
     } else {
-        "simulated".to_string()
+        "docker".to_string()
     };
+
+    let mut status = "stopped".to_string();
+    let mut container_id = None;
+    let mut ip_address = None;
+
+    if actual_runtime_mode == "docker" && is_docker {
+        let container_name = format!("netlab_{}_{}", lab_id, comp_id);
+        let actual_image = if image.contains("ubuntu") || component_type == "vps" {
+            "ubuntu:24.04".to_string()
+        } else {
+            image.clone()
+        };
+        if let Ok((cid, ip)) = state
+            .docker
+            .start_container(
+                &container_name,
+                &actual_image,
+                allocated_host_port,
+                container_port.or(Some(22)),
+                vec!["NETLAB=true".to_string()],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                Some("bridge".to_string()),
+            )
+            .await
+        {
+            container_id = Some(cid);
+            ip_address = ip;
+            status = "running".to_string();
+            if let Some(hp) = allocated_host_port {
+                state.gateway.register_component(&comp_id, hp);
+            }
+        }
+    }
+
     let comp = LabComponent {
         id: comp_id,
         lab_id: lab_id.clone(),
@@ -475,9 +524,9 @@ pub async fn add_component(
         component_type,
         runtime_mode: actual_runtime_mode,
         image,
-        status: "stopped".to_string(),
-        container_id: None,
-        ip_address: None,
+        status,
+        container_id,
+        ip_address,
         host_port: allocated_host_port,
         container_port,
         created_at: now,
@@ -500,80 +549,153 @@ pub async fn exec_command(
 ) -> Result<ExecResult, String> {
     let initial_cwd = cwd.unwrap_or_else(|| "/root".to_string());
 
-    if runtime_mode == "qemu" {
-        let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-        for lab in labs { for comp in lab.components { if comp.id == component_id { return state.qemu.exec_command(&component_id, comp.host_port.ok_or("VM SSH port missing")?, &command, &initial_cwd).await; } } }
-        Err("Active QEMU VM not found for component".to_string())
-    } else if runtime_mode == "docker" {
-        let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-        for mut lab in labs {
-            if let Some(pos) = lab.components.iter().position(|c| c.id == component_id) {
-                let comp_name = lab.components[pos].name.clone();
-                let comp_image = lab.components[pos].image.clone();
-                let container_name = format!("netlab_{}_{}", lab.id, component_id);
-                let target_ref = lab.components[pos]
-                    .container_id
-                    .clone()
-                    .unwrap_or(container_name.clone());
+    // 1. Resolve component from database
+    let labs = state.db.list_labs().map_err(|e| e.to_string())?;
+    let mut resolved: Option<(Lab, usize)> = None;
 
-                let cid = match state.docker.ensure_active_container(&target_ref).await {
+    for lab in labs {
+        if let Some(pos) = lab
+            .components
+            .iter()
+            .position(|c| c.id == component_id || c.container_id.as_deref() == Some(&component_id))
+        {
+            resolved = Some((lab, pos));
+            break;
+        }
+    }
+
+    let (mut lab, pos) = match resolved {
+        Some(val) => val,
+        None => {
+            return Err(format!(
+                "VPS record '{}' not found in database. Please select an active VPS.",
+                component_id
+            ));
+        }
+    };
+
+    let comp = lab.components[pos].clone();
+    let actual_mode = if comp.runtime_mode.is_empty() {
+        runtime_mode
+    } else {
+        comp.runtime_mode.clone()
+    };
+
+    // Mode B: QEMU VM
+    if actual_mode == "qemu" {
+        return state
+            .qemu
+            .exec_command(
+                &comp.id,
+                comp.host_port.ok_or("VM SSH port missing")?,
+                &command,
+                &initial_cwd,
+            )
+            .await;
+    }
+
+    // Mode A: Docker Container
+    if actual_mode == "docker" {
+        if !state.docker.is_available() {
+            return Err("Linux runtime unavailable — configure a supported container engine to create a real Linux environment.".to_string());
+        }
+
+        let container_name = format!("netlab_{}_{}", lab.id, comp.id);
+        let actual_image = if comp.image.contains("ubuntu") || comp.component_type == "vps" {
+            "ubuntu:24.04".to_string()
+        } else {
+            comp.image.clone()
+        };
+
+        // Ensure container is running and resolve actual runtime ID
+        let cid = if let Some(ref existing_cid) = comp.container_id {
+            match state.docker.ensure_active_container(existing_cid).await {
+                Ok(id) => id,
+                Err(_) => match state.docker.ensure_active_container(&container_name).await {
                     Ok(id) => id,
                     Err(_) => {
-                        if let Ok(id) = state.docker.ensure_active_container(&container_name).await {
-                            id
-                        } else if let Ok(id) = state.docker.ensure_active_container(&component_id).await {
-                            id
-                        } else {
-                            return Err(format!(
-                                "Active container not found for component '{}'. Please start the VPS.",
-                                comp_name
-                            ));
-                        }
+                        let host_port_opt = comp.host_port.map(find_available_port);
+                        let (new_cid, new_ip) = state
+                            .docker
+                            .start_container(
+                                &container_name,
+                                &actual_image,
+                                host_port_opt,
+                                comp.container_port,
+                                vec!["NETLAB=true".to_string()],
+                                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                                Some("bridge".to_string()),
+                            )
+                            .await?;
+                        lab.components[pos].ip_address = new_ip;
+                        new_cid
                     }
-                };
+                },
+            }
+        } else {
+            let host_port_opt = comp.host_port.map(find_available_port);
+            let (new_cid, new_ip) = state
+                .docker
+                .start_container(
+                    &container_name,
+                    &actual_image,
+                    host_port_opt,
+                    comp.container_port,
+                    vec!["NETLAB=true".to_string()],
+                    Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                    Some("bridge".to_string()),
+                )
+                .await?;
+            lab.components[pos].ip_address = new_ip;
+            new_cid
+        };
 
-                if lab.components[pos].container_id.as_deref() != Some(&cid) || lab.components[pos].status != "running" {
-                    lab.components[pos].container_id = Some(cid.clone());
-                    lab.components[pos].status = "running".to_string();
-                    let _ = state.db.save_lab(&lab);
-                }
+        if lab.components[pos].container_id.as_deref() != Some(&cid)
+            || lab.components[pos].status != "running"
+        {
+            lab.components[pos].container_id = Some(cid.clone());
+            lab.components[pos].status = "running".to_string();
+            let _ = state.db.save_lab(&lab);
+        }
 
-                let is_ubuntu = comp_image.contains("ubuntu");
-                let shell = if is_ubuntu { "bash" } else { "sh" };
+        let is_ubuntu = actual_image.contains("ubuntu");
+        let shell = if is_ubuntu { "bash" } else { "sh" };
 
-                    let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
-                    let script = format!(
-                        r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
+        let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
+        let script = format!(
+            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
 {}
 __NETLAB_EXIT_CODE=$?
 echo ""
 echo "__NETLAB_CWD__:$(pwd)"
 exit $__NETLAB_EXIT_CODE"#,
-                        initial_cwd, normalized_command
-                    );
+            initial_cwd, normalized_command
+        );
 
-                    let mut res = state
-                        .docker
-                        .exec_command(&cid, vec![shell, "-c", &script])
-                        .await?;
+        let mut res = state
+            .docker
+            .exec_command(&cid, vec![shell, "-c", &script])
+            .await?;
 
-                    if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {
-                        let (out, marker) = res.stdout.split_at(pos);
-                        let marker_line = marker.lines().next().unwrap_or("");
-                        let new_cwd = marker_line.trim_start_matches("__NETLAB_CWD__:").trim();
-                        res.cwd = Some(new_cwd.to_string());
-                        res.stdout = out.trim_end().to_string();
-                    } else {
-                        res.cwd = Some(initial_cwd);
-                    }
-
-                    return Ok(res);
-            }
+        if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {
+            let (out, marker) = res.stdout.split_at(pos);
+            let marker_line = marker.lines().next().unwrap_or("");
+            let new_cwd = marker_line.trim_start_matches("__NETLAB_CWD__:").trim();
+            res.cwd = Some(new_cwd.to_string());
+            res.stdout = out.trim_end().to_string();
+        } else {
+            res.cwd = Some(initial_cwd);
         }
-        Err("Active container not found for component".to_string())
-    } else {
-        Ok(state.simulator.exec_command_with_cwd(&component_id, &command, &initial_cwd))
+
+        return Ok(res);
     }
+
+    // Explicitly disallow simulated execution for Ubuntu VPS
+    if comp.component_type == "vps" || comp.image.contains("ubuntu") {
+        return Err("Linux runtime unavailable — configure a supported container engine to create a real Linux environment.".to_string());
+    }
+
+    Ok(state.simulator.exec_command_with_cwd(&comp.id, &command, &initial_cwd))
 }
 
 #[tauri::command]

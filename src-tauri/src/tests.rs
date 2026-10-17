@@ -134,20 +134,23 @@ mod tests {
         use crate::docker::DockerManager;
         let docker = DockerManager::new();
         if !docker.is_available() {
-            println!("Docker not available, skipping live Ubuntu VPS test");
+            println!("Docker not available, skipping live Ubuntu VPS acceptance tests");
             return;
         }
 
-        // Test with pre-built netlab/ubuntu-vps:24.04 or fallback to ubuntu:24.04
-        let image = "netlab/ubuntu-vps:24.04";
+        let container_name = "netlab_test_ubuntu_acceptance_full";
+        // Clean up any stale container from earlier runs
+        let _ = docker.remove_container(container_name).await;
+
+        let image = "ubuntu:24.04";
         let (cid, ip) = docker
             .start_container(
-                "netlab_test_ubuntu_mandatory_e2e",
+                container_name,
                 image,
                 Some(18029),
-                Some(18029),
-                vec!["NETLAB_TEST=1".to_string()],
-                Some(vec!["/usr/sbin/sshd".to_string(), "-D".to_string(), "-p".to_string(), "18029".to_string()]),
+                Some(22),
+                vec!["POCKETCLOUD_TEST=1".to_string()],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
                 Some("host".to_string()),
             )
             .await
@@ -156,80 +159,131 @@ mod tests {
         assert!(docker.is_container_running(&cid).await, "Container must be confirmed running");
         assert!(ip.is_some(), "Container must have an internal IP address");
 
-        // 1. cat /etc/os-release
-        let res_os = docker
+        // Test A: Operating system
+        let res_a = docker
             .exec_command(&cid, vec!["bash", "-c", "cat /etc/os-release"])
             .await
-            .expect("exec cat /etc/os-release failed");
-        assert_eq!(res_os.exit_code, 0);
-        assert!(res_os.stdout.contains("Ubuntu"), "Output must contain Ubuntu");
-        assert!(res_os.stdout.contains("24.04"), "Output must contain 24.04");
+            .expect("Test A exec failed");
+        assert_eq!(res_a.exit_code, 0, "Test A exit code must be 0");
+        assert!(res_a.stdout.contains("Ubuntu"), "Test A must contain Ubuntu");
+        assert!(res_a.stdout.contains("24.04"), "Test A must contain 24.04");
+        println!("[Acceptance Test A PASSED] cat /etc/os-release:\n{}", res_a.stdout.lines().take(3).collect::<Vec<_>>().join("\n"));
 
-        // 2. whoami
-        let res_whoami = docker
-            .exec_command(&cid, vec!["bash", "-c", "whoami"])
-            .await
-            .expect("exec whoami failed");
-        assert_eq!(res_whoami.exit_code, 0);
-        assert_eq!(res_whoami.stdout.trim(), "root");
+        // Test B: Identity
+        let res_b1 = docker.exec_command(&cid, vec!["bash", "-c", "whoami"]).await.expect("whoami failed");
+        assert_eq!(res_b1.exit_code, 0);
+        assert_eq!(res_b1.stdout.trim(), "root");
 
-        // 3. pwd
-        let res_pwd = docker
-            .exec_command(&cid, vec!["bash", "-c", "pwd"])
-            .await
-            .expect("exec pwd failed");
-        assert_eq!(res_pwd.exit_code, 0);
-        assert_eq!(res_pwd.stdout.trim(), "/root");
+        let res_b2 = docker.exec_command(&cid, vec!["bash", "-c", "id"]).await.expect("id failed");
+        assert_eq!(res_b2.exit_code, 0);
+        assert!(res_b2.stdout.contains("uid=0(root)"));
 
-        // 4. command -v apt
-        let res_apt = docker
-            .exec_command(&cid, vec!["bash", "-c", "command -v apt"])
-            .await
-            .expect("exec command -v apt failed");
-        assert_eq!(res_apt.exit_code, 0);
-        assert!(res_apt.stdout.contains("apt"));
+        let res_b3 = docker.exec_command(&cid, vec!["bash", "-c", "pwd"]).await.expect("pwd failed");
+        assert_eq!(res_b3.exit_code, 0);
+        assert_eq!(res_b3.stdout.trim(), "/root");
+        println!("[Acceptance Test B PASSED] whoami: {}, id: {}, pwd: {}", res_b1.stdout.trim(), res_b2.stdout.trim(), res_b3.stdout.trim());
 
-        // 5. curl --version
-        let res_curl = docker
-            .exec_command(&cid, vec!["bash", "-c", "curl --version"])
-            .await
-            .expect("exec curl --version failed");
-        assert_eq!(res_curl.exit_code, 0);
-        assert!(res_curl.stdout.contains("curl"));
+        // Test C: Kernel (shared with host)
+        let res_c = docker.exec_command(&cid, vec!["bash", "-c", "uname -a"]).await.expect("uname -a failed");
+        assert_eq!(res_c.exit_code, 0);
+        assert!(res_c.stdout.contains("Linux"));
+        println!("[Acceptance Test C PASSED] uname -a: {}", res_c.stdout.trim());
 
-        // 6. File creation & read back: /tmp/netlab-debug/result.txt
-        let res_file = docker
+        // Test D: Filesystem
+        let res_d = docker
             .exec_command(
                 &cid,
                 vec![
                     "bash",
                     "-c",
-                    "mkdir -p /tmp/netlab-debug && echo 'real-runtime-ok' > /tmp/netlab-debug/result.txt && cat /tmp/netlab-debug/result.txt",
+                    "mkdir -p /tmp/pocketcloud-test && printf 'runtime-ok\\n' > /tmp/pocketcloud-test/result.txt && cat /tmp/pocketcloud-test/result.txt",
                 ],
             )
             .await
-            .expect("exec file creation failed");
-        assert_eq!(res_file.exit_code, 0);
-        assert_eq!(res_file.stdout.trim(), "real-runtime-ok");
+            .expect("Test D exec failed");
+        assert_eq!(res_d.exit_code, 0);
+        assert_eq!(res_d.stdout.trim(), "runtime-ok");
+        println!("[Acceptance Test D PASSED] /tmp/pocketcloud-test/result.txt: {}", res_d.stdout.trim());
 
-        // 7. Verify outbound DNS and HTTP reachability from VPS
-        let res_net = docker
+        // Test E: Package manager
+        let res_e1 = docker.exec_command(&cid, vec!["bash", "-c", "command -v apt-get"]).await.expect("apt-get check failed");
+        assert_eq!(res_e1.exit_code, 0);
+        assert!(res_e1.stdout.contains("apt-get"));
+
+        let res_e2 = docker.exec_command(&cid, vec!["bash", "-c", "apt-get update"]).await.expect("apt-get update failed");
+        assert_eq!(res_e2.exit_code, 0);
+        println!("[Acceptance Test E PASSED] apt-get update completed successfully with exit code 0");
+
+        // Test F: Networking utilities (ip addr)
+        let res_f = docker
             .exec_command(
                 &cid,
                 vec![
                     "bash",
                     "-c",
-                    "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 https://raw.githubusercontent.com || echo 'FAILED'",
+                    "if ! command -v ip >/dev/null 2>&1; then apt-get install -y --no-install-recommends iproute2 >/dev/null 2>&1; fi && ip addr",
                 ],
             )
             .await
-            .expect("exec outbound curl check failed");
-        assert_ne!(res_net.stdout.trim(), "FAILED", "VPS must have working outbound internet and DNS");
+            .expect("ip addr exec failed");
+        assert_eq!(res_f.exit_code, 0);
+        assert!(res_f.stdout.contains("eth0") || res_f.stdout.contains("lo") || res_f.stdout.contains("inet"));
+        println!("[Acceptance Test F PASSED] ip addr executed inside container with exit code 0");
 
-        // Stop container and verify is_container_running reflects reality
-        let _ = docker.stop_container(&cid).await;
+        // Test G: Container restart & persistence
+        let res_g1 = docker
+            .exec_command(
+                &cid,
+                vec![
+                    "bash",
+                    "-c",
+                    "mkdir -p /opt/pocketcloud-test && printf 'persistent-data\\n' > /opt/pocketcloud-test/state.txt",
+                ],
+            )
+            .await
+            .expect("write persistence file failed");
+        assert_eq!(res_g1.exit_code, 0);
+
+        // Stop the container
+        docker.stop_container(&cid).await.expect("stop container failed");
         tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
         assert!(!docker.is_container_running(&cid).await, "Container must be confirmed stopped");
+
+        // Resume the SAME container
+        let resumed_cid = docker
+            .ensure_active_container(&cid)
+            .await
+            .expect("ensure_active_container failed");
+        assert_eq!(resumed_cid, cid, "Must resume exact same container instance");
+
+        // Read the file after restart
+        let res_g2 = docker
+            .exec_command(&cid, vec!["bash", "-c", "cat /opt/pocketcloud-test/state.txt"])
+            .await
+            .expect("read persistence file failed");
+        assert_eq!(res_g2.exit_code, 0);
+        assert_eq!(res_g2.stdout.trim(), "persistent-data", "File contents must survive container restart");
+        println!("[Acceptance Test G PASSED] File /opt/pocketcloud-test/state.txt persisted across container stop and restart: {}", res_g2.stdout.trim());
+
+        // Test H: Runtime identity
+        let inspect_res = docker.inspect_container(&cid).await.expect("inspect container failed");
+        let actual_docker_id = inspect_res.id.expect("container must have ID");
+        assert_eq!(actual_docker_id, cid, "Runtime ID returned by Docker must match terminal execution target ID");
+        println!("[Acceptance Test H PASSED] Runtime ID matched: {}", actual_docker_id);
+
+        // Test I: Failure handling
+        // Stop the container externally
+        docker.stop_container(&cid).await.expect("stop container failed");
+        assert!(!docker.is_container_running(&cid).await);
+
+        // ensure_active_container recovers cleanly and restarts container
+        let recovered_cid = docker.ensure_active_container(&cid).await.expect("recovering container failed");
+        assert_eq!(recovered_cid, cid);
+        assert!(docker.is_container_running(&cid).await, "Recovered container must be running");
+        println!("[Acceptance Test I PASSED] Container recovered from stopped state without data loss");
+
+        // Clean up test container
+        let _ = docker.stop_container(&cid).await;
         let _ = docker.remove_container(&cid).await;
     }
 

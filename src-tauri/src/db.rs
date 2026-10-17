@@ -176,10 +176,11 @@ impl Database {
 
 fn get_db_path() -> PathBuf {
     if let Ok(home) = std::env::var("HOME") {
-        // Keep the real-VM runtime separate from the old container/simulation
-        // state.  This prevents an already-running pre-QEMU build from
-        // re-saving stale Docker components into the new application.
         PathBuf::from(home).join(".local/share/netlab/netlab-v2.db")
+    } else if let Ok(appdata) = std::env::var("APPDATA") {
+        PathBuf::from(appdata).join("netlab/netlab-v2.db")
+    } else if let Ok(userprofile) = std::env::var("USERPROFILE") {
+        PathBuf::from(userprofile).join(".netlab/netlab-v2.db")
     } else {
         PathBuf::from("netlab-v2.db")
     }

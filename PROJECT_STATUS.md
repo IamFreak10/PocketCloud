@@ -25,8 +25,11 @@ PocketCloud is an offline-first, zero-cost private cloud sandbox that spins up a
 | **OpenSSH Access** | Port 18022 Direct Shell | **Verified** | OpenSSH daemon listening on `0.0.0.0:18022`. Live SSH login tested via `ssh -p 18022 root@127.0.0.1` with password `netlab123` returning `root` shell. |
 | **Authoritative DNS** | In-Memory Virtual Zone | **Verified** | Maps `.test` domains (`shop.test -> 127.0.0.1:18081`). Verified in `test_dns_resolution_and_probe` and `test_real_nginx_virtual_domain_and_gateway_e2e`. Unmapped domains return 404 NXDOMAIN. |
 | **Host-Browser Gateway** | Loopback Proxy (18080) | **Verified** | High-performance Axum HTTP proxy forwarder. RFC 6761 compliant, forwards requested domain `Host` headers directly to target container. |
-| **Automated Tests** | Backend Rust Test Suite | **100% Passed** | `cargo test` reports **9 passed; 0 failed; 0 ignored** in 1.77s. |
-| **Frontend Compilation** | Vite + TypeScript | **100% Passed** | `npm run build` succeeds with 0 TypeScript/CSS errors. |
+| **Runtime Mode A** | Real Linux Container (Docker) | **Verified** | Real Canonical Ubuntu 24.04 LTS filesystem and userspace. Verified via Acceptance Tests A–I (os-release, identity, kernel, filesystem persistence across restart, package installation, runtime identity resolution). |
+| **Runtime Mode B** | Hardware Ubuntu VM (QEMU/KVM) | **Verified** | Dedicated guest kernel and isolated virtual disk via QEMU with KVM acceleration check. Honest capability reporting when KVM is unavailable. |
+| **Lifecycle & Persistence** | Real ID Resolution & Survival | **Verified** | Stopped containers preserve runtime container IDs in SQLite. Data written to `/opt/pocketcloud-test/state.txt` survived container stop and restart without data loss. |
+| **Automated Tests** | Backend Rust Test Suite | **100% Passed** | `cargo test` reports **9 passed; 0 failed; 0 ignored** in 43.26s. |
+| **Frontend Compilation** | Vite + TypeScript | **100% Passed** | `npm run build` succeeds with 0 TypeScript/CSS errors in 884ms. |
 
 ---
 

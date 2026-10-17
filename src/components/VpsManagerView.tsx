@@ -110,6 +110,11 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
   const handleGhLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ghUsername.trim() || !ghPat.trim()) return;
+    if (!activeComp || !isRunning) {
+      setGhAuthError('Please start the VPS node first to configure GitHub credentials.');
+      return;
+    }
+
     setGhAuthLoading(true);
     setGhAuthError(null);
     setGhAuthLog([]);
@@ -117,26 +122,24 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
     const log = (msg: string) => setGhAuthLog(prev => [...prev, msg]);
 
     try {
-      log('$ gh auth login --with-token');
-      await new Promise(r => setTimeout(r, 600));
-      log('✓ Logging in to github.com...');
-      await new Promise(r => setTimeout(r, 500));
-
-      // Validate PAT format (ghp_ prefix for classic, github_pat_ for fine-grained)
       if (!ghPat.startsWith('ghp_') && !ghPat.startsWith('github_pat_') && ghPat.length < 20) {
         throw new Error('Invalid token format. Use a GitHub Personal Access Token (ghp_... or github_pat_...)');
       }
 
-      log('$ git config --global user.name "' + ghUsername + '"');
-      await new Promise(r => setTimeout(r, 300));
-      log('$ git config --global credential.helper store');
-      await new Promise(r => setTimeout(r, 300));
-      log('✓ Token saved to /root/.git-credentials');
-      await new Promise(r => setTimeout(r, 400));
-      log('✓ git config updated: user.name = ' + ghUsername);
-      log('✓ Authenticated as ' + ghUsername);
+      log(`$ git config --global user.name "${ghUsername}"`);
+      await api.execCommand(activeComp.id, `git config --global user.name "${ghUsername}"`, activeComp.runtime_mode);
+
+      log(`$ git config --global credential.helper store`);
+      await api.execCommand(activeComp.id, `git config --global credential.helper store`, activeComp.runtime_mode);
+
+      log(`$ store token in /root/.git-credentials`);
+      const storeCmd = `echo "https://${ghUsername}:${ghPat}@github.com" > /root/.git-credentials && chmod 600 /root/.git-credentials`;
+      await api.execCommand(activeComp.id, storeCmd, activeComp.runtime_mode);
+
+      log('✓ Genuine token saved to /root/.git-credentials');
+      log(`✓ Authenticated as ${ghUsername}`);
       log('');
-      log('✅ GitHub login successful! You can now clone private repos.');
+      log('✅ GitHub authentication successful! You can now clone private repos inside this VPS.');
 
       setGhUser({
         login: ghUsername,
@@ -145,7 +148,6 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
         avatar: `https://github.com/${ghUsername}.png`,
       });
       setGhLoggedIn(true);
-      // Pre-fill clone URL with the authenticated user
       if (!repoUrl) setRepoUrl(`https://github.com/${ghUsername}/`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -70,26 +70,35 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
   const printUbuntuBanner = (term: Terminal) => {
     term.clear();
-    const defaultDir = activeComp?.runtime_mode === 'qemu' ? '/home/netlab' : '/root';
-    const activeDir = componentCwdMap.current[activeComp?.id || ''] || defaultDir;
+    if (!activeComp) {
+      term.writeln('\x1b[1;33m⚠️ No VPS node found in the current lab.\x1b[0m\r\n');
+      term.writeln('Please create or select an Ubuntu VPS from the Labs view to open an authentic terminal.\r\n');
+      return;
+    }
+
+    const defaultDir = activeComp.runtime_mode === 'qemu' ? '/home/netlab' : '/root';
+    const activeDir = componentCwdMap.current[activeComp.id] || defaultDir;
     setCurrentCwd(activeDir);
 
-    // Full Ubuntu welcome banner for all runtime modes (docker, qemu, simulated)
-    term.writeln('\x1b[1;37mWelcome to Ubuntu 24.04 LTS (GNU/Linux 6.8.0-45-generic x86_64)\x1b[0m\r\n');
-    term.writeln(' * Documentation:  \x1b[1;34mhttps://help.ubuntu.com\x1b[0m');
-    term.writeln(' * Management:     \x1b[1;34mhttps://landscape.canonical.com\x1b[0m');
-    term.writeln(' * Support:        \x1b[1;34mhttps://ubuntu.com/pro\x1b[0m\r\n');
-    term.writeln('  System information as of ' + new Date().toUTCString());
-    term.writeln('  System load:  \x1b[1;32m0.08\x1b[0m                Processes:             \x1b[1;32m31\x1b[0m');
-    term.writeln('  Usage of /:   \x1b[1;32m1.2% of 48.00GB\x1b[0m     Users logged in:       \x1b[1;32m1\x1b[0m');
-    term.writeln('  Memory usage: \x1b[1;32m8%\x1b[0m                  IPv4 address for eth0: \x1b[1;36m' + (activeComp?.ip_address || '172.17.0.2') + '\x1b[0m\r\n');
-    if (activeComp?.runtime_mode === 'qemu') {
-      term.writeln(' * QEMU guest VM selected. Login user: netlab.\r\n');
-    } else if (activeComp?.status !== 'running') {
-      term.writeln(` \x1b[1;33m⚠️ Node "${activeComp?.name || activeComp?.id}" (${activeComp?.image}) is currently STOPPED.\x1b[0m`);
-      term.writeln(' \x1b[90m👉 Running any command will automatically launch the container.\x1b[0m\r\n');
+    if (activeComp.runtime_mode === 'qemu') {
+      term.writeln('\x1b[1;37mPocketCloud — Ubuntu 24.04 LTS (Hardware VM)\x1b[0m\r\n');
+      term.writeln(' * Hypervisor: QEMU/KVM Hardware Isolation');
+      term.writeln(' * Guest Kernel: Dedicated Ubuntu Guest Kernel');
+      term.writeln(' * Local Port: 127.0.0.1:' + (activeComp.host_port || 18022));
+      term.writeln(' * Login User: netlab\r\n');
+    } else if (activeComp.status !== 'running') {
+      term.writeln(`\x1b[1;33m⚠️ Node "${activeComp.name}" is currently STOPPED.\x1b[0m\r\n`);
+      term.writeln(' * Runtime: Docker Linux Container');
+      term.writeln(' * Container ID: ' + (activeComp.container_id ? activeComp.container_id.slice(0, 12) : 'Not provisioned yet'));
+      term.writeln(' 👉 Type any command or click "Start VPS" to launch the container.\r\n');
     } else {
-      term.writeln(' * Ubuntu 24.04 LTS Full VPS (' + (activeComp?.image || 'netlab/ubuntu-vps:24.04') + ') — running\r\n');
+      const shortId = activeComp.container_id ? activeComp.container_id.slice(0, 12) : 'active';
+      term.writeln('\x1b[1;37mPocketCloud — Ubuntu 24.04 LTS Container (Docker Engine)\x1b[0m\r\n');
+      term.writeln(' * Image: ' + activeComp.image);
+      term.writeln(' * Container ID: ' + shortId);
+      term.writeln(' * Host Kernel: Shared with host system (Linux containers share host kernel)');
+      term.writeln(' * Loopback SSH Port: 127.0.0.1:' + (activeComp.host_port || 18022));
+      term.writeln(' * Status: \x1b[1;32mONLINE & RUNNING\x1b[0m\r\n');
     }
     term.write(getPrompt(activeDir));
   };
