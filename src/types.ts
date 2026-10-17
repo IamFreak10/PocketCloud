@@ -82,3 +82,10 @@ export interface SqlExecuteResult {
   error?: string;
 }
 
+export interface DockerImageInfo {
+  id: string;
+  tag: string;
+  size_mb: number;
+  created: string;
+}
+

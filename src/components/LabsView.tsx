@@ -33,6 +33,7 @@ interface LabsViewProps {
   onStopComponent: (labId: string, compId: string) => Promise<void>;
   onOpenTerminal: (compId: string) => void;
   onViewLogs: (compId: string) => void;
+  onDeleteComponent?: (labId: string, compId: string) => Promise<void>;
 }
 
 export const LabsView: React.FC<LabsViewProps> = ({
@@ -45,6 +46,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
   onStopComponent,
   onOpenTerminal,
   onViewLogs,
+  onDeleteComponent,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddNodeModal, setShowAddNodeModal] = useState(false);
@@ -357,6 +359,20 @@ export const LabsView: React.FC<LabsViewProps> = ({
                                 </a>
                               )}
                             </>
+                          )}
+
+                          {onDeleteComponent && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete component "${comp.name}"? This will stop and remove its container.`)) {
+                                  onDeleteComponent(comp.lab_id, comp.id);
+                                }
+                              }}
+                              className="retro-btn p-1.5 bg-[#FCA5A5] hover:bg-[#ef4444] hover:text-white text-stone-900 shadow-[2px_2px_0px_#18181B] cursor-pointer"
+                              title="Delete Component"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
                       </td>

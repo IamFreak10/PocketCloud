@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
   DnsRecord,
+  DockerImageInfo,
   ExecResult,
   Lab,
   LabComponent,
@@ -491,6 +492,47 @@ export const api = {
       target_port: record.targetPort,
       host_port: record.hostPort,
     };
+  },
+
+  async deleteComponent(labId: string, componentId: string): Promise<Lab> {
+    if (isTauri) {
+      return await invoke<Lab>('delete_component', { labId, componentId });
+    }
+    return {
+      id: labId,
+      name: 'Lab',
+      description: '',
+      status: 'Running',
+      created_at: new Date().toISOString(),
+      components: [],
+      routes: [],
+    };
+  },
+
+  async listDockerImages(): Promise<DockerImageInfo[]> {
+    if (isTauri) {
+      return await invoke<DockerImageInfo[]>('list_docker_images');
+    }
+    return [
+      { id: 'e4bff65c59d9', tag: 'netlab/ubuntu-vps:24.04', size_mb: 285.4, created: '10 hours ago' },
+      { id: '6c41b518b0d1', tag: 'alpine:latest', size_mb: 7.8, created: '10 hours ago' },
+      { id: '7e9bf00d12ac', tag: 'nginx:alpine', size_mb: 43.2, created: '10 hours ago' },
+      { id: '433cdfe98315', tag: 'postgres:alpine', size_mb: 120.1, created: '11 hours ago' },
+    ];
+  },
+
+  async deleteImage(imageTag: string): Promise<string> {
+    if (isTauri) {
+      return await invoke<string>('delete_docker_image', { imageTag });
+    }
+    return `Deleted image ${imageTag}`;
+  },
+
+  async pruneContainers(): Promise<number> {
+    if (isTauri) {
+      return await invoke<number>('prune_stopped_containers');
+    }
+    return 2;
   },
 };
 

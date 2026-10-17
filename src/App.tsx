@@ -196,6 +196,19 @@ export function App() {
     }
   };
 
+  const handleDeleteComponent = async (labId: string, compId: string) => {
+    try {
+      const updatedLab = await api.deleteComponent(labId, compId);
+      setLabs((prev) => prev.map((l) => (l.id === labId ? updatedLab : l)));
+      if (currentLab?.id === labId) {
+        setCurrentLab(updatedLab);
+      }
+      showToast(`Deleted component successfully`);
+    } catch (err: unknown) {
+      showToast(`Failed to delete: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
   const handleOpenTerminalForComponent = (compId: string) => {
     handleSelectComponent(compId);
     setCurrentTab('terminal');
@@ -265,6 +278,7 @@ export function App() {
               onAddComponent={handleAddComponent}
               onStartComponent={handleStartComponent}
               onStopComponent={handleStopComponent}
+              onDeleteComponent={handleDeleteComponent}
               onOpenTerminal={handleOpenTerminalForComponent}
               onViewLogs={handleOpenTerminalForComponent}
             />
@@ -286,6 +300,7 @@ export function App() {
               onSelectComponent={handleSelectComponent}
               onStartComponent={handleStartComponent}
               onStopComponent={handleStopComponent}
+              onDeleteComponent={handleDeleteComponent}
             />
           </div>
 

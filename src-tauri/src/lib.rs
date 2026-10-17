@@ -63,6 +63,10 @@ pub fn run() {
             commands::probe_network_target,
             commands::list_dns_records,
             commands::add_dns_record,
+            commands::delete_component,
+            commands::list_docker_images,
+            commands::delete_docker_image,
+            commands::prune_stopped_containers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running NetLab desktop application");

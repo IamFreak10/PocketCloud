@@ -101,3 +101,11 @@ pub struct SqlExecuteResult {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DockerImageInfo {
+    pub id: String,
+    pub tag: String,
+    pub size_mb: f64,
+    pub created: String,
+}
+

@@ -4,8 +4,8 @@ use crate::dns::DnsEngine;
 use crate::docker::DockerManager;
 use crate::gateway::HostGateway;
 use crate::models::{
-    DnsRecord, ExecResult, GatewayRoute, Lab, LabComponent, NetworkProbeResult, SqlExecuteResult,
-    SystemCapabilities,
+    DnsRecord, DockerImageInfo, ExecResult, GatewayRoute, Lab, LabComponent, NetworkProbeResult,
+    SqlExecuteResult, SystemCapabilities,
 };
 use crate::simulator::Simulator;
 use crate::qemu::QemuManager;
@@ -679,4 +679,55 @@ pub async fn add_dns_record(
     state.gateway.register_route(&domain, host_port);
 
     Ok(rec)
+}
+
+#[tauri::command]
+pub async fn delete_component(
+    state: State<'_, AppState>,
+    lab_id: String,
+    component_id: String,
+) -> Result<Lab, String> {
+    let labs = state.db.list_labs().map_err(|e| e.to_string())?;
+    let mut lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+
+    if let Some(pos) = lab.components.iter().position(|c| c.id == component_id) {
+        let comp = &lab.components[pos];
+        let container_name = format!("netlab_{}_{}", lab.id, comp.id);
+
+        if state.docker.is_available() {
+            if let Some(cid) = &comp.container_id {
+                let _ = state.docker.remove_container(cid).await;
+            }
+            let _ = state.docker.remove_container(&container_name).await;
+        }
+
+        state.dns.remove_record(&format!("dns-{}", comp.id));
+        lab.components.remove(pos);
+        state.db.save_lab(&lab).map_err(|e| e.to_string())?;
+    }
+
+    Ok(lab)
+}
+
+#[tauri::command]
+pub async fn list_docker_images(
+    state: State<'_, AppState>,
+) -> Result<Vec<DockerImageInfo>, String> {
+    state.docker.list_images().await
+}
+
+#[tauri::command]
+pub async fn delete_docker_image(
+    state: State<'_, AppState>,
+    image_tag: String,
+) -> Result<String, String> {
+    state.docker.remove_image(&image_tag).await?;
+    Ok(format!("Successfully deleted image '{}'", image_tag))
+}
+
+#[tauri::command]
+pub async fn prune_stopped_containers(
+    state: State<'_, AppState>,
+) -> Result<usize, String> {
+    state.docker.prune_stopped_containers().await
 }

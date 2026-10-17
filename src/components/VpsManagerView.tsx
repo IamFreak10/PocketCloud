@@ -43,6 +43,7 @@ interface VpsManagerViewProps {
   onSelectComponent: (id: string) => void;
   onStartComponent?: (labId: string, compId: string) => Promise<void>;
   onStopComponent?: (labId: string, compId: string) => Promise<void>;
+  onDeleteComponent?: (labId: string, compId: string) => Promise<void>;
 }
 
 interface ProcessItem {
@@ -66,6 +67,7 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
   onSelectComponent,
   onStartComponent,
   onStopComponent,
+  onDeleteComponent,
 }) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'packages' | 'files' | 'processes' | 'network' | 'github'>('terminal');
   const [copiedSsh, setCopiedSsh] = useState(false);
@@ -438,6 +440,22 @@ export const VpsManagerView: React.FC<VpsManagerViewProps> = ({
             >
               <Play className="w-3.5 h-3.5" />
               <span>Start VPS</span>
+            </button>
+          )}
+
+          {/* Delete VPS Component Button */}
+          {onDeleteComponent && activeComp && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to permanently delete node "${activeComp.name}"? This will stop and remove its Docker container.`)) {
+                  onDeleteComponent(activeComp.lab_id, activeComp.id);
+                }
+              }}
+              className="retro-btn px-3 py-1.5 bg-[#FCA5A5] hover:bg-[#ef4444] hover:text-white text-stone-900 text-xs font-black gap-1.5 transition-colors cursor-pointer"
+              title="Permanently Delete this Node & Container"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete VPS</span>
             </button>
           )}
 

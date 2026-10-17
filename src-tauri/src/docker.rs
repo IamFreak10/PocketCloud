@@ -467,4 +467,60 @@ impl DockerManager {
             test_res.stderr
         ))
     }
+
+    pub async fn list_images(&self) -> Result<Vec<crate::models::DockerImageInfo>, String> {
+        let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
+        let images = docker
+            .list_images(None::<bollard::image::ListImagesOptions<String>>)
+            .await
+            .map_err(|e| format!("Failed to list images: {}", e))?;
+
+        let mut result = Vec::new();
+        for img in images {
+            let id = img.id.trim_start_matches("sha256:").chars().take(12).collect::<String>();
+            let size_mb = (img.size as f64) / (1024.0 * 1024.0);
+            let created = img.created.to_string();
+
+            for tag in img.repo_tags {
+                if tag != "<none>:<none>" {
+                    result.push(crate::models::DockerImageInfo {
+                        id: id.clone(),
+                        tag,
+                        size_mb: (size_mb * 10.0).round() / 10.0,
+                        created: created.clone(),
+                    });
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    pub async fn remove_image(&self, image_tag: &str) -> Result<(), String> {
+        let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
+        docker
+            .remove_image(
+                image_tag,
+                Some(bollard::image::RemoveImageOptions {
+                    force: true,
+                    ..Default::default()
+                }),
+                None,
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| format!("Failed to remove image '{}': {}", image_tag, e))
+    }
+
+    pub async fn prune_stopped_containers(&self) -> Result<usize, String> {
+        let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
+        let mut filters = HashMap::new();
+        filters.insert("name".to_string(), vec!["netlab_".to_string()]);
+        let res = docker
+            .prune_containers(Some(bollard::container::PruneContainersOptions {
+                filters,
+            }))
+            .await
+            .map_err(|e| format!("Failed to prune containers: {}", e))?;
+        Ok(res.containers_deleted.unwrap_or_default().len())
+    }
 }
