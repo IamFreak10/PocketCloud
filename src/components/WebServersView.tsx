@@ -84,12 +84,12 @@ http {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 space-y-8 select-none bg-[#090d16] text-slate-100">
+    <div className="h-full overflow-y-auto p-6 space-y-6 select-none bg-[#FAF7EE] text-stone-900">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">
-          Web Servers & Virtual Hosts
+        <h1 className="text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+          <span>🌐</span> Web Servers & Virtual Hosts
         </h1>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-stone-600 mt-1 font-medium">
           Manage real Nginx and Apache HTTP server instances, virtual hosts, document roots, and validate syntax with <code>nginx -t</code>.
         </p>
       </div>
@@ -98,60 +98,68 @@ http {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setSelectedServerType('nginx')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+          className={`retro-btn px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer gap-2 ${
             selectedServerType === 'nginx'
-              ? 'bg-cyan-950/80 text-cyan-300 border-cyan-700 shadow-md'
-              : 'bg-[#111928] text-gray-400 border-gray-800 hover:text-white'
+              ? 'bg-[#FEF08A] text-stone-900 shadow-[3px_3px_0px_#18181B]'
+              : 'bg-white text-stone-700 hover:bg-[#F4EEDC] shadow-[2px_2px_0px_#18181B]'
           }`}
         >
-          <Server className="w-4 h-4 text-cyan-400" />
+          <Server className="w-4 h-4 text-stone-900" />
           <span>Nginx Production Engine</span>
         </button>
         <button
           onClick={() => setSelectedServerType('apache')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+          className={`retro-btn px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer gap-2 ${
             selectedServerType === 'apache'
-              ? 'bg-amber-950/80 text-amber-300 border-amber-700 shadow-md'
-              : 'bg-[#111928] text-gray-400 border-gray-800 hover:text-white'
+              ? 'bg-[#FEF08A] text-stone-900 shadow-[3px_3px_0px_#18181B]'
+              : 'bg-white text-stone-700 hover:bg-[#F4EEDC] shadow-[2px_2px_0px_#18181B]'
           }`}
         >
-          <Globe className="w-4 h-4 text-amber-400" />
+          <Globe className="w-4 h-4 text-stone-900" />
           <span>Apache HTTP Server</span>
         </button>
       </div>
 
       {/* Active Web Instances */}
-      <div className="bg-[#0d1424] border border-gray-800 rounded-xl p-6 shadow-xl">
-        <h2 className="text-base font-bold text-white mb-4">
-          Active Web Server Containers in Current Lab
-        </h2>
+      <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B]">
+        <div className="flex items-center gap-2 pb-3 border-b-2 border-stone-900 mb-4">
+          <div className="flex items-center gap-1.5 mr-2">
+            <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+            <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+            <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+          </div>
+          <h2 className="text-sm font-black text-stone-900">
+            Active Web Server Containers in Current Lab
+          </h2>
+        </div>
+
         <div className="space-y-3">
           {webComponents.map((comp) => (
             <div
               key={comp.id}
-              className="flex items-center justify-between p-4 bg-[#11192b] border border-gray-800 rounded-lg"
+              className="flex items-center justify-between p-3.5 bg-[#FAF7EE] border-2 border-stone-900 rounded-xl shadow-[2px_2px_0px_#18181B]"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-cyan-950 rounded-lg border border-cyan-800 text-cyan-400">
+                <div className="p-2.5 bg-[#BAE6FD] rounded-lg border border-stone-900 text-stone-900 shadow-[1px_1px_0px_#18181B]">
                   <Server className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">{comp.name}</span>
+                    <span className="font-black text-stone-900 text-sm">{comp.name}</span>
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                      className={`text-[10px] font-black px-2 py-0.5 rounded-full border border-stone-900 shadow-[1px_1px_0px_#18181B] ${
                         comp.status === 'running'
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                          : 'bg-gray-800 text-gray-400'
+                          ? 'bg-[#86EFAC] text-stone-900'
+                          : 'bg-stone-200 text-stone-600'
                       }`}
                     >
                       {comp.status}
                     </span>
-                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                    <span className="text-[10px] bg-white text-stone-800 px-2 py-0.5 rounded border border-stone-400 font-mono font-bold">
                       {comp.runtime_mode === 'docker' ? 'Real Container' : 'Simulated'}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-400 font-mono mt-0.5">
+                  <div className="text-xs text-stone-600 font-mono mt-1 font-medium">
                     Image: {comp.image} • Host Port: {comp.host_port || 18081}
                   </div>
                 </div>
@@ -161,7 +169,7 @@ http {
                   href={`http://127.0.0.1:${comp.host_port}/`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-semibold transition"
+                  className="retro-btn px-3 py-1.5 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 rounded-xl text-xs font-black shadow-[2px_2px_0px_#18181B] transition"
                 >
                   Open Live VHost
                 </a>
@@ -169,7 +177,7 @@ http {
             </div>
           ))}
           {webComponents.length === 0 && (
-            <div className="text-xs text-gray-500 p-4 text-center">
+            <div className="text-xs text-stone-500 p-6 text-center font-medium">
               No web servers deployed yet in this lab. Deploy one from My Labs or Starter Templates.
             </div>
           )}
@@ -177,58 +185,60 @@ http {
       </div>
 
       {/* Live VHost Configuration Editor */}
-      <div className="bg-[#0d1424] border border-gray-800 rounded-xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B] space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900">
           <div className="flex items-center gap-2">
-            <FileCode className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-base font-bold text-white">
+            <FileCode className="w-5 h-5 text-stone-900" />
+            <h2 className="text-sm font-black text-stone-900">
               Live Configuration Editor (<code>/etc/nginx/nginx.conf</code>)
             </h2>
           </div>
           <button
             onClick={handleApplyAndValidate}
             disabled={isApplying}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+            className="retro-btn px-4 py-2 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 rounded-xl text-xs font-black shadow-[2px_2px_0px_#18181B] gap-1.5 transition cursor-pointer disabled:opacity-50"
           >
             {isApplying ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-stone-900" />
             )}
             <span>Validate & Reload (nginx -t)</span>
           </button>
         </div>
 
-        <textarea
-          value={configContent}
-          onChange={(e) => setConfigContent(e.target.value)}
-          className="w-full bg-[#0a0e17] border border-gray-800 rounded-lg p-4 font-mono text-xs text-gray-200 outline-none focus:border-cyan-500 h-64 resize-none leading-relaxed"
-        />
-
+        {/* Status message */}
         {statusMessage.type !== 'idle' && (
           <div
-            className={`p-4 rounded-xl border text-xs font-mono whitespace-pre-line leading-relaxed ${
+            className={`p-3.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_#18181B] text-xs font-mono whitespace-pre-wrap font-bold ${
               statusMessage.type === 'success'
-                ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
-                : 'bg-rose-950/60 border-rose-800 text-rose-300'
+                ? 'bg-[#C7F9CC] text-stone-900'
+                : 'bg-[#FECDD3] text-stone-900'
             }`}
           >
-            <div className="font-bold mb-1 flex items-center gap-2">
-              {statusMessage.type === 'success' ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Validation & Reload Succeeded:</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 text-rose-400" />
-                  <span>Nginx Syntax Error:</span>
-                </>
-              )}
-            </div>
             {statusMessage.text}
           </div>
         )}
+
+        {/* Configuration Code Editor with dark interior and retro frame */}
+        <div className="retro-window bg-white border-2 border-stone-900 rounded-xl overflow-hidden shadow-[3px_3px_0px_#18181B]">
+          <div className="h-8 bg-[#F4EEDC] px-3 flex items-center justify-between border-b-2 border-stone-900 text-xs font-mono text-stone-700 font-bold">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] border border-stone-900 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27C93F] border border-stone-900 inline-block" />
+              <span className="ml-2 font-mono text-stone-800">nginx.conf — Direct Container Injection</span>
+            </div>
+            <span>Read/Write</span>
+          </div>
+          <textarea
+            value={configContent}
+            onChange={(e) => setConfigContent(e.target.value)}
+            rows={14}
+            spellCheck={false}
+            className="w-full p-4 bg-[#0c1017] text-emerald-400 font-mono text-xs outline-none resize-none leading-relaxed select-text"
+          />
+        </div>
       </div>
     </div>
   );

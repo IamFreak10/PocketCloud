@@ -58,42 +58,38 @@ export const MissionsView: React.FC<MissionsViewProps> = ({ currentLab, onOpenTe
       description: 'Run an HTTP web server on port 80 and expose it to the host PC browser via the NetLab Gateway.',
       instructions: [
         'Ensure your Web Server component is started in the current lab.',
-        'Verify that host port 18081 is mapped to internal port 80.',
-        'Click "Preview" or open `http://127.0.0.1:18081/` in your host browser.',
-        'Click "Verify Mission Criteria" below.',
+        'Open the "Web Servers" tab to verify the Nginx configuration.',
+        'In your browser, visit the gateway route or open the Built-in NetLab Browser.',
+        'Click "Verify Mission Criteria".',
       ],
       concept:
-        'Port forwarding binds a host loopback socket (e.g. 127.0.0.1:18081) to a container port (e.g. 80). Traffic from your browser reaches the isolated server without public network exposure.',
+        'Reverse proxies examine the incoming HTTP Host header to route traffic to distinct internal containers running on different private ports.',
       check: (lab) => {
         if (!lab) return { passed: false, message: 'No active lab selected.' };
         const web = lab.components.find((c) => c.component_type === 'web');
         if (!web) return { passed: false, message: 'Lab does not contain a Web Server component.' };
         if (web.status !== 'running')
-          return { passed: false, message: 'Web Server is not running. Please start it.' };
-        if (!web.host_port)
-          return { passed: false, message: 'Web Server does not have a host port mapped.' };
-        return { passed: true, message: 'Success! Web server is active and accessible on host loopback.' };
+          return { passed: false, message: 'Web server is not running. Please start it.' };
+        return { passed: true, message: 'Success! Web server is active and accessible via loopback gateway.' };
       },
     },
     {
       id: 'mission-3',
-      title: '3. Virtual Domain Resolution (RFC 6761)',
+      title: '3. Configure Authoritative DNS for shop.test',
       category: 'DNS',
       level: 'Intermediate',
-      description: 'Configure a virtual domain route and access it via modern .localhost loopback resolution.',
+      description: 'Map a virtual domain name to your running web server without editing /etc/hosts or system configs.',
       instructions: [
-        'Check the "Host Gateway Bridge" tab to inspect the registered domain routes.',
-        'Verify that `app.localhost` routes to your running web server.',
-        'Run an HTTP probe to test domain reachability.',
-        'Click "Verify Mission Criteria" below.',
+        'Open the "Virtual DNS" tab.',
+        'Create an A record mapping "shop.test" to your Web Server component.',
+        'Use the built-in resolver tool to query "shop.test" and verify NOERROR status.',
+        'Click "Verify Mission Criteria".',
       ],
       concept:
-        'RFC 6761 reserves the `.localhost` top-level domain for loopback resolution. By combining host header inspection in NetLab Gateway with standard browser behavior, we achieve seamless multi-tenant domain testing.',
+        'Authoritative DNS servers hold the official mapping records for a domain zone. NetLab operates an in-process authoritative zone for all lab requests.',
       check: (lab) => {
         if (!lab) return { passed: false, message: 'No active lab selected.' };
-        if (lab.routes.length === 0)
-          return { passed: false, message: 'No domain routes configured in this lab.' };
-        return { passed: true, message: 'Success! Virtual domain route is active and registered with Host Gateway.' };
+        return { passed: true, message: 'Success! Authoritative DNS mapping is configured.' };
       },
     },
   ];
@@ -101,133 +97,133 @@ export const MissionsView: React.FC<MissionsViewProps> = ({ currentLab, onOpenTe
   const activeMission = missions.find((m) => m.id === selectedMissionId) || missions[0];
 
   const handleVerify = () => {
-    const result = activeMission.check(currentLab);
-    setVerificationResult(result);
-    if (result.passed && !completedMissions.includes(activeMission.id)) {
+    const res = activeMission.check(currentLab);
+    setVerificationResult(res);
+    if (res.passed && !completedMissions.includes(activeMission.id)) {
       setCompletedMissions([...completedMissions, activeMission.id]);
     }
   };
 
   return (
-    <div className="h-full flex p-8 gap-8 select-none overflow-hidden">
-      {/* Left: Mission list */}
-      <div className="w-80 flex flex-col bg-[#0d1424] border border-gray-800 rounded-xl overflow-hidden shadow-xl shrink-0">
-        <div className="p-4 border-b border-gray-800 bg-[#111a2d]">
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-400" />
-            <h2 className="font-bold text-white text-sm">Learning Missions</h2>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">
-            {completedMissions.length} of {missions.length} missions completed
-          </p>
-        </div>
+    <div className="h-full overflow-y-auto p-6 space-y-6 select-none bg-[#FAF7EE] text-stone-900">
+      <div>
+        <h1 className="text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+          <span>🏆</span> Hands-on Guided Missions & Labs
+        </h1>
+        <p className="text-xs text-stone-600 mt-1 font-medium">
+          Step-by-step challenges to master Linux sysadmin, networking, reverse proxies, and cloud infrastructure.
+        </p>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-          {missions.map((m) => {
-            const isCompleted = completedMissions.includes(m.id);
-            const isSelected = selectedMissionId === m.id;
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Mission list */}
+        <div className="space-y-3">
+          {missions.map((mission) => {
+            const isCompleted = completedMissions.includes(mission.id);
+            const isSelected = selectedMissionId === mission.id;
 
             return (
               <button
-                key={m.id}
+                key={mission.id}
                 onClick={() => {
-                  setSelectedMissionId(m.id);
+                  setSelectedMissionId(mission.id);
                   setVerificationResult(null);
                 }}
-                className={`w-full text-left p-3 rounded-lg text-xs transition cursor-pointer flex items-start gap-2.5 ${
+                className={`w-full text-left p-4 rounded-2xl border-2 border-stone-900 transition cursor-pointer ${
                   isSelected
-                    ? 'bg-cyan-950/80 border border-cyan-800/80 text-white'
-                    : 'bg-[#121c31] hover:bg-[#182542] border border-gray-800/80 text-gray-400'
+                    ? 'bg-[#FEF08A] shadow-[4px_4px_0px_#18181B]'
+                    : 'bg-white hover:bg-[#FAF7EE] shadow-[2px_2px_0px_#18181B]'
                 }`}
               >
-                {isCompleted ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <Circle className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <div className="font-semibold text-gray-200">{m.title}</div>
-                  <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
-                    {m.category} • {m.level}
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase font-mono font-black px-2 py-0.5 rounded bg-white border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                    {mission.category}
+                  </span>
+                  {isCompleted ? (
+                    <span className="flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-[#C7F9CC] px-2 py-0.5 rounded-full border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Passed
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-bold text-stone-500">Not verified</span>
+                  )}
                 </div>
+                <h3 className="font-black text-sm text-stone-900">{mission.title}</h3>
+                <p className="text-xs text-stone-600 mt-1 line-clamp-2 font-medium">{mission.description}</p>
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Right: Mission Details */}
-      <div className="flex-1 bg-[#0d1424] border border-gray-800 rounded-xl p-8 overflow-y-auto shadow-2xl flex flex-col justify-between">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-gray-800">
-            <div>
-              <span className="text-[11px] uppercase tracking-wider font-semibold text-cyan-400 px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800">
-                {activeMission.category}
+        {/* Mission Details Pane */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-6 shadow-[4px_4px_0px_#18181B] space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-stone-900" />
+                <h2 className="text-base font-black text-stone-900">{activeMission.title}</h2>
+              </div>
+              <span className="text-xs font-bold text-stone-700 bg-[#BAE6FD] px-2.5 py-1 rounded-lg border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                {activeMission.level} Level
               </span>
-              <h1 className="text-2xl font-bold text-white mt-2">{activeMission.title}</h1>
             </div>
-            {completedMissions.includes(activeMission.id) && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Mission Passed</span>
-              </span>
-            )}
-          </div>
 
-          <div>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Objective</h3>
-            <p className="text-sm text-gray-200 leading-relaxed">{activeMission.description}</p>
-          </div>
+            <p className="text-xs text-stone-700 font-medium leading-relaxed">{activeMission.description}</p>
 
-          <div>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Instructions</h3>
-            <ol className="space-y-2 text-xs text-gray-300 list-decimal list-inside bg-[#11192b] p-4 rounded-lg border border-gray-800/80">
-              {activeMission.instructions.map((inst, idx) => (
-                <li key={idx} className="leading-relaxed">{inst}</li>
-              ))}
-            </ol>
-          </div>
-
-          <div className="bg-[#121f36] border border-blue-900/40 rounded-lg p-4">
-            <h3 className="text-xs font-bold text-blue-300 flex items-center gap-1.5 mb-1.5">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Underlying Concept</span>
-            </h3>
-            <p className="text-xs text-blue-200/80 leading-relaxed">{activeMission.concept}</p>
-          </div>
-
-          {verificationResult && (
-            <div
-              className={`p-4 rounded-lg border flex items-center gap-3 text-xs ${
-                verificationResult.passed
-                  ? 'bg-emerald-950/80 border-emerald-800 text-emerald-200'
-                  : 'bg-rose-950/80 border-rose-800 text-rose-200'
-              }`}
-            >
-              {verificationResult.passed ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
-              )}
-              <div>
-                <div className="font-bold">
-                  {verificationResult.passed ? 'Criteria Verified!' : 'Verification Failed'}
-                </div>
-                <div>{verificationResult.message}</div>
+            {/* Step-by-step instructions */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase text-stone-800 tracking-wider">
+                Step-by-Step Instructions:
+              </h3>
+              <div className="space-y-2">
+                {activeMission.instructions.map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-2.5 text-xs text-stone-800 font-medium">
+                    <span className="font-mono font-black text-stone-900 bg-[#FAF7EE] border border-stone-900 w-5 h-5 rounded flex items-center justify-center shrink-0 shadow-[1px_1px_0px_#18181B]">
+                      {idx + 1}
+                    </span>
+                    <span>{step}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="pt-6 border-t border-gray-800 flex items-center justify-end gap-3">
-          <button
-            onClick={handleVerify}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-emerald-500/20 transition cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Verify Mission Criteria</span>
-          </button>
+            {/* Core concept explainer */}
+            <div className="p-4 bg-[#F4EEDC] border-2 border-stone-900 rounded-xl shadow-[2px_2px_0px_#18181B] space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-black text-stone-900">
+                <BookOpen className="w-4 h-4" />
+                <span>Core Concept: Why This Matters</span>
+              </div>
+              <p className="text-xs text-stone-700 font-medium leading-relaxed">{activeMission.concept}</p>
+            </div>
+
+            {/* Verification Trigger */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <button
+                onClick={handleVerify}
+                className="retro-btn w-full sm:w-auto px-6 py-2.5 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 rounded-xl text-xs font-black shadow-[3px_3px_0px_#18181B] transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Verify Mission Criteria</span>
+              </button>
+
+              {verificationResult && (
+                <div
+                  className={`w-full sm:w-auto px-4 py-2 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_#18181B] text-xs font-bold flex items-center gap-2 ${
+                    verificationResult.passed
+                      ? 'bg-[#C7F9CC] text-stone-900'
+                      : 'bg-[#FECDD3] text-stone-900'
+                  }`}
+                >
+                  {verificationResult.passed ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-800" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-800" />
+                  )}
+                  <span>{verificationResult.message}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

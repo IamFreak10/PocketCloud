@@ -19,31 +19,33 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ capabilities }) => {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 space-y-8 select-none max-w-4xl">
+    <div className="h-full overflow-y-auto p-6 space-y-6 select-none max-w-4xl bg-[#FAF7EE] text-stone-900">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Settings & Resource Quotas</h1>
-        <p className="text-xs text-gray-400 mt-1">
+        <h1 className="text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+          <span>⚙️</span> Settings & Resource Quotas
+        </h1>
+        <p className="text-xs text-stone-600 mt-1 font-medium">
           Configure container resource budgets, loopback gateway ports, and local storage limits.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Resource Allocation */}
-        <div className="bg-[#0d1424] border border-gray-800 rounded-xl p-6 shadow-xl space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-cyan-400" />
-            <span>Container Resource Limits (Safety Bounds)</span>
-          </h2>
+        <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B] space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b-2 border-stone-900">
+            <Cpu className="w-5 h-5 text-stone-900" />
+            <h2 className="text-sm font-black text-stone-900">Container Resource Limits (Safety Bounds)</h2>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1">
+              <label className="block text-xs font-black text-stone-800 mb-1">
                 Default RAM Limit Per Container (MB)
               </label>
               <select
                 value={ramLimit}
                 onChange={(e) => setRamLimit(e.target.value)}
-                className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
               >
                 <option value="256">256 MB (Ultra-Lightweight)</option>
                 <option value="512">512 MB (Recommended for 16GB Hosts)</option>
@@ -53,71 +55,73 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ capabilities }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1">
+              <label className="block text-xs font-black text-stone-800 mb-1">
                 Max CPU Cores Per Workload
               </label>
               <select
                 value={cpuLimit}
                 onChange={(e) => setCpuLimit(e.target.value)}
-                className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
               >
-                <option value="1">1 CPU Core (Quota: 100,000us)</option>
-                <option value="2">2 CPU Cores</option>
-                <option value="4">4 CPU Cores</option>
+                <option value="0.5">0.5 Cores (Throttle background labs)</option>
+                <option value="1">1 Core (Standard)</option>
+                <option value="2">2 Cores (Heavy compilation/Node builds)</option>
               </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-black text-stone-800 mb-1">
+                Loopback Host Gateway Proxy Port
+              </label>
+              <input
+                type="number"
+                value={gatewayPort}
+                onChange={(e) => setGatewayPort(e.target.value)}
+                className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
+              />
+              <p className="text-[11px] text-stone-500 mt-1 font-medium">
+                The local TCP port on 127.0.0.1 that proxies traffic into isolated lab containers.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Gateway & Network */}
-        <div className="bg-[#0d1424] border border-gray-800 rounded-xl p-6 shadow-xl space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-400" />
-            <span>Host-Browser Gateway Loopback Bridge</span>
-          </h2>
+        {/* Storage and Cleanup */}
+        <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B] space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b-2 border-stone-900">
+            <Trash2 className="w-5 h-5 text-stone-900" />
+            <h2 className="text-sm font-black text-stone-900">Container Hygiene & Housekeeping</h2>
+          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">
-              Gateway HTTP Reverse Proxy Port
-            </label>
-            <input
-              type="text"
-              value={gatewayPort}
-              onChange={(e) => setGatewayPort(e.target.value)}
-              className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono outline-none focus:border-cyan-500 max-w-xs"
-            />
-            <p className="text-[11px] text-gray-500 mt-1">
-              Traffic is bound strictly to <code>127.0.0.1</code> to prevent public exposure.
-            </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between p-3.5 bg-[#FAF7EE] border-2 border-stone-900 rounded-xl shadow-[2px_2px_0px_#18181B] gap-3">
+            <div>
+              <div className="font-black text-xs text-stone-900">Prune Stopped Lab Containers</div>
+              <div className="text-[11px] text-stone-600 font-medium">
+                Remove stopped Docker containers to free system memory and port mappings.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => alert('Pruning stopped NetLab containers...')}
+              className="retro-btn px-4 py-2 bg-[#FDA4AF] hover:bg-[#fb7185] text-stone-900 rounded-xl text-xs font-black shadow-[2px_2px_0px_#18181B] cursor-pointer shrink-0"
+            >
+              Prune Containers
+            </button>
           </div>
         </div>
 
-        {/* Hardware Status */}
-        <div className="bg-[#0d1424] border border-gray-800 rounded-xl p-6 shadow-xl space-y-3 text-xs">
-          <h2 className="text-base font-bold text-white flex items-center gap-2 mb-2">
-            <HardDrive className="w-4 h-4 text-blue-400" />
-            <span>Detected Host Platform Telemetry</span>
-          </h2>
-          <div className="grid grid-cols-2 gap-3 text-gray-300 font-mono">
-            <div>Operating System: <span className="text-white">{capabilities?.os_platform || 'Linux'}</span></div>
-            <div>Docker Engine: <span className="text-emerald-400">{capabilities?.docker_version || '29.8.1'}</span></div>
-            <div>Physical RAM: <span className="text-white">{capabilities?.total_memory_mb || 16384} MB</span></div>
-            <div>KVM Virtualization: <span className="text-amber-400">{capabilities?.kvm_available ? 'Available' : 'Unprivileged'}</span></div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-2">
+        {/* Save button */}
+        <div className="flex items-center gap-3">
           <button
             type="submit"
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+            className="retro-btn px-6 py-2.5 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 font-black text-xs rounded-xl shadow-[3px_3px_0px_#18181B] cursor-pointer"
           >
-            <span>Save Preferences</span>
+            Save Configuration
           </button>
-
           {saved && (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-[#C7F9CC] px-3 py-1.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_#18181B]">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Settings Saved Successfully</span>
+              Settings saved successfully!
             </span>
           )}
         </div>

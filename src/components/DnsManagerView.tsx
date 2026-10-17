@@ -98,7 +98,10 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
     const start = performance.now();
     const clean = queryDomain.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
     const match = records.find((r) => r.domain.toLowerCase() === clean);
-    const latency = Math.round(performance.now() - start + 2);
+
+    await new Promise((r) => setTimeout(r, 60));
+    const end = performance.now();
+    const latency = Math.round(end - start);
 
     if (match) {
       setTestResult({
@@ -107,40 +110,37 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
         recordType: match.record_type,
         ttl: match.ttl,
         latencyMs: latency,
-        details: `Authoritative answer from NetLab Virtual DNS Engine on 127.0.0.1:${gatewayPort}`,
       });
     } else {
       setTestResult({
         status: 'NXDOMAIN',
         latencyMs: latency,
-        details: `Non-Existent Domain (NXDOMAIN). No active DNS zone or record matches "${clean}".`,
+        details: `Name Error (NXDOMAIN): No authoritative DNS record found for '${clean}' in NetLab zone.`,
       });
     }
   };
 
   return (
-    <div className="p-8 h-full overflow-y-auto bg-[#090d16] text-slate-100 select-none">
+    <div className="h-full overflow-y-auto p-6 space-y-6 select-none bg-[#FAF7EE] text-stone-900">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-gray-800 mb-8 gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-cyan-950/80 border border-cyan-800 rounded-xl text-cyan-400">
-              <Globe className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                Virtual Internet & Authoritative DNS Manager
-              </h1>
-              <p className="text-xs text-gray-400">
-                Create fake domains (.test, .example, .local) and route them to running lab web servers without touching /etc/hosts
-              </p>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b-2 border-stone-900 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-[#BAE6FD] border-2 border-stone-900 rounded-xl text-stone-900 shadow-[3px_3px_0px_#18181B]">
+            <Globe className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-stone-900 flex items-center gap-2">
+              Virtual Internet & Authoritative DNS Manager
+            </h1>
+            <p className="text-xs text-stone-600 font-medium mt-0.5">
+              Create fake domains (.test, .example, .local) and route them to running lab web servers without touching /etc/hosts
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
+          <span className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#C7F9CC] text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_#18181B] flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-700" />
             <span>Virtual DNS Engine: Active</span>
           </span>
         </div>
@@ -150,15 +150,22 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
         {/* Left 2 Columns: Record List & Add Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Add Record Card */}
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl">
-            <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-cyan-400" />
-              <span>Create Virtual DNS Record</span>
-            </h2>
+          <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B]">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <h2 className="text-sm font-black text-stone-900 ml-2 flex items-center gap-1.5">
+                  <Plus className="w-4 h-4 text-stone-900" />
+                  <span>Create Virtual DNS Record</span>
+                </h2>
+              </div>
+            </div>
 
             <form onSubmit={handleAddRecord} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-black text-stone-800 mb-1">
                   Domain Name (FQDN)
                 </label>
                 <input
@@ -167,18 +174,18 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
                   value={domainInput}
                   onChange={(e) => setDomainInput(e.target.value)}
                   placeholder="e.g. shop.test or api.shop.test"
-                  className="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs text-stone-900 font-mono font-bold shadow-[2px_2px_0px_#18181B] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-black text-stone-800 mb-1">
                   Record Type
                 </label>
                 <select
                   value={typeInput}
                   onChange={(e) => setTypeInput(e.target.value as any)}
-                  className="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs text-stone-900 font-bold shadow-[2px_2px_0px_#18181B] focus:outline-none"
                 >
                   <option value="A">A (Address Mapping)</option>
                   <option value="CNAME">CNAME (Alias to Canonical Name)</option>
@@ -188,13 +195,13 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-black text-stone-800 mb-1">
                   Target Lab Web Server / Component
                 </label>
                 <select
                   value={targetCompId}
                   onChange={(e) => setTargetCompId(e.target.value)}
-                  className="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs text-stone-900 font-bold shadow-[2px_2px_0px_#18181B] focus:outline-none"
                 >
                   {webComponents.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -208,22 +215,22 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-black text-stone-800 mb-1">
                   TTL (Seconds)
                 </label>
                 <input
                   type="number"
                   value={ttlInput}
                   onChange={(e) => setTtlInput(Number(e.target.value))}
-                  className="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs text-stone-900 font-mono font-bold shadow-[2px_2px_0px_#18181B] focus:outline-none"
                 />
               </div>
 
-              <div className="md:col-span-2 flex justify-end">
+              <div className="md:col-span-2 flex justify-end pt-2">
                 <button
                   type="submit"
                   disabled={!domainInput.trim()}
-                  className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-950 transition disabled:opacity-40 cursor-pointer"
+                  className="retro-btn px-5 py-2.5 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 font-black text-xs shadow-[3px_3px_0px_#18181B] disabled:opacity-40 cursor-pointer"
                 >
                   Add Authoritative DNS Record
                 </button>
@@ -232,15 +239,17 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
           </div>
 
           {/* Records Table */}
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-cyan-400" />
-                <span>Active DNS Zone Records ({records.length})</span>
-              </h2>
+          <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B]">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900 mb-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-stone-900" />
+                <h2 className="text-sm font-black text-stone-900">
+                  Active DNS Zone Records ({records.length})
+                </h2>
+              </div>
               <button
                 onClick={fetchRecords}
-                className="text-xs text-cyan-400 hover:underline cursor-pointer"
+                className="retro-btn px-2.5 py-1 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 text-xs font-black shadow-[2px_2px_0px_#18181B] cursor-pointer"
               >
                 Refresh
               </button>
@@ -249,32 +258,32 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-gray-800 text-gray-400">
-                    <th className="pb-3 font-semibold">Domain</th>
-                    <th className="pb-3 font-semibold">Type</th>
-                    <th className="pb-3 font-semibold">Target Destination</th>
-                    <th className="pb-3 font-semibold">TTL</th>
-                    <th className="pb-3 font-semibold">Actions</th>
+                  <tr className="border-b-2 border-stone-900 bg-[#FAF7EE] text-stone-800 font-sans font-black">
+                    <th className="p-3">Domain</th>
+                    <th className="p-3">Type</th>
+                    <th className="p-3">Target Destination</th>
+                    <th className="p-3">TTL</th>
+                    <th className="p-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/60">
+                <tbody className="divide-y-2 divide-stone-200">
                   {records.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-800/30 transition">
-                      <td className="py-3 font-bold text-cyan-300">{r.domain}</td>
-                      <td className="py-3">
-                        <span className="px-2 py-0.5 rounded bg-blue-950 text-blue-400 font-bold border border-blue-800 text-[10px]">
+                    <tr key={r.id} className="hover:bg-[#FAF7EE]/70 transition">
+                      <td className="p-3 font-black text-blue-700">{r.domain}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded bg-[#BAE6FD] text-stone-900 font-black border border-stone-900 text-[10px] shadow-[1px_1px_0px_#18181B]">
                           {r.record_type}
                         </span>
                       </td>
-                      <td className="py-3 text-emerald-400">{r.value}</td>
-                      <td className="py-3 text-gray-400">{r.ttl}s</td>
-                      <td className="py-3">
+                      <td className="p-3 font-bold text-emerald-700">{r.value}</td>
+                      <td className="p-3 text-stone-600 font-bold">{r.ttl}s</td>
+                      <td className="p-3">
                         <button
                           onClick={() => {
                             setTestDomain(r.domain);
                             handleDnsLookup(r.domain);
                           }}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[11px] font-sans font-semibold transition cursor-pointer"
+                          className="retro-btn px-2.5 py-1 bg-[#F3E8FF] hover:bg-[#e9d5ff] text-stone-900 rounded-lg text-[11px] font-sans font-black shadow-[2px_2px_0px_#18181B] cursor-pointer"
                         >
                           Query DNS
                         </button>
@@ -283,7 +292,7 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
                   ))}
                   {records.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-6 text-center text-gray-500 font-sans">
+                      <td colSpan={5} className="py-8 text-center text-stone-500 font-sans font-medium">
                         No DNS records defined yet. Create an A record above to map your test domain!
                       </td>
                     </tr>
@@ -297,12 +306,12 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
         {/* Right Column: DNS Query Tool & Technical Explanation */}
         <div className="space-y-6">
           {/* DNS Lookup & Resolver Tool */}
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl">
-            <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-              <Search className="w-4 h-4 text-cyan-400" />
-              <span>DNS Resolver Test Tool</span>
-            </h2>
-            <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+          <div className="retro-window bg-white border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B]">
+            <div className="flex items-center gap-2 pb-3 border-b-2 border-stone-900 mb-3">
+              <Search className="w-4 h-4 text-stone-900" />
+              <h2 className="text-sm font-black text-stone-900">DNS Resolver Test Tool</h2>
+            </div>
+            <p className="text-xs text-stone-600 mb-4 font-medium leading-relaxed">
               Query the virtual DNS resolver directly to inspect resolution latency, authoritative answers, or verify NXDOMAIN failures.
             </p>
 
@@ -312,11 +321,11 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
                 value={testDomain}
                 onChange={(e) => setTestDomain(e.target.value)}
                 placeholder="shop.test"
-                className="flex-1 bg-[#0b0f19] border border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-cyan-500 focus:outline-none"
+                className="flex-1 bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] focus:outline-none"
               />
               <button
                 onClick={() => handleDnsLookup(testDomain)}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+                className="retro-btn px-4 py-2 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 rounded-xl text-xs font-black shadow-[2px_2px_0px_#18181B] cursor-pointer"
               >
                 Resolve
               </button>
@@ -325,36 +334,36 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
             {/* Test Result Box */}
             {testResult.status !== 'IDLE' && (
               <div
-                className={`p-4 rounded-xl border text-xs font-mono leading-relaxed ${
+                className={`p-4 rounded-xl border-2 border-stone-900 shadow-[3px_3px_0px_#18181B] text-xs font-mono leading-relaxed ${
                   testResult.status === 'FOUND'
-                    ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
-                    : 'bg-rose-950/40 border-rose-800 text-rose-200'
+                    ? 'bg-[#C7F9CC] text-stone-900'
+                    : 'bg-[#FECDD3] text-stone-900'
                 }`}
               >
-                <div className="flex items-center gap-2 font-bold mb-2">
+                <div className="flex items-center gap-2 font-black mb-2">
                   {testResult.status === 'FOUND' ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-800" />
                       <span>DNS Answer: NOERROR (Found)</span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <XCircle className="w-4 h-4 text-rose-800" />
                       <span>DNS Status: NXDOMAIN (Non-Existent)</span>
                     </>
                   )}
                 </div>
 
                 {testResult.status === 'FOUND' ? (
-                  <div className="space-y-1 text-[11px]">
+                  <div className="space-y-1 text-[11px] font-bold">
                     <div>Domain: <b>{testDomain}</b></div>
                     <div>Type: <b>{testResult.recordType}</b></div>
-                    <div>Answer: <b className="text-white">{testResult.resolved}</b></div>
+                    <div>Answer: <b className="text-stone-900 underline">{testResult.resolved}</b></div>
                     <div>TTL: {testResult.ttl}s</div>
                     <div>Resolver Latency: {testResult.latencyMs} ms</div>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-rose-300">
+                  <p className="text-[11px] font-bold text-rose-900">
                     {testResult.details}
                   </p>
                 )}
@@ -363,15 +372,15 @@ export const DnsManagerView: React.FC<DnsManagerViewProps> = ({
           </div>
 
           {/* Educational Note */}
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl text-xs text-gray-400 space-y-3">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold">
+          <div className="retro-window bg-[#FEF08A] border-2 border-stone-900 rounded-2xl p-5 shadow-[4px_4px_0px_#18181B] text-xs text-stone-800 space-y-3">
+            <div className="flex items-center gap-2 text-stone-900 font-black">
               <HelpCircle className="w-4 h-4" />
               <span>How NetLab Virtual DNS Works</span>
             </div>
-            <p className="leading-relaxed">
+            <p className="leading-relaxed font-medium">
               NetLab does <b>not</b> modify your computer’s <code>/etc/hosts</code> or system DNS.
             </p>
-            <p className="leading-relaxed">
+            <p className="leading-relaxed font-medium">
               Instead, all requests from the <b>Built-in NetLab Browser</b> route through the safe local bridge (<code>127.0.0.1:{gatewayPort}</code>). The bridge inspects the <code>Host</code> header, resolves it via NetLab’s authoritative in-memory DNS table, and proxies traffic directly to the right container!
             </p>
           </div>

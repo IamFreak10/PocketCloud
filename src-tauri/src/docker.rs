@@ -27,25 +27,47 @@ impl DockerManager {
     pub async fn ensure_image(&self, image: &str) -> Result<(), String> {
         let docker = self.client.as_ref().ok_or("Docker not available")?;
 
-        // Try inspecting image first
+        // 1. Try inspecting requested image first
         if docker.inspect_image(image).await.is_ok() {
             return Ok(());
         }
 
-        // Pull image
-        let mut pull_stream = docker.create_image(
-            Some(CreateImageOptions {
-                from_image: image,
-                ..Default::default()
-            }),
-            None,
-            None,
-        );
+        // 2. If it's the custom ubuntu-vps and not present locally, auto-pull official ubuntu:24.04 base
+        let pull_target = if image.contains("ubuntu-vps") {
+            "ubuntu:24.04"
+        } else {
+            image
+        };
 
-        while let Some(pull_result) = pull_stream.next().await {
-            if let Err(e) = pull_result {
-                return Err(format!("Failed to pull {}: {}", image, e));
+        // Try inspecting fallback base image
+        if docker.inspect_image(pull_target).await.is_err() {
+            let mut pull_stream = docker.create_image(
+                Some(CreateImageOptions {
+                    from_image: pull_target,
+                    ..Default::default()
+                }),
+                None,
+                None,
+            );
+
+            while let Some(pull_result) = pull_stream.next().await {
+                if let Err(e) = pull_result {
+                    return Err(format!("Failed to pull {}: {}", pull_target, e));
+                }
             }
+        }
+
+        // If pulling for ubuntu-vps, tag the pulled ubuntu:24.04 as netlab/ubuntu-vps:24.04
+        if image.contains("ubuntu-vps") {
+            let _ = docker
+                .tag_image(
+                    pull_target,
+                    Some(bollard::image::TagImageOptions {
+                        repo: "netlab/ubuntu-vps",
+                        tag: "24.04",
+                    }),
+                )
+                .await;
         }
 
         Ok(())

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, HardDrive, Globe, ShieldCheck, Box, ExternalLink } from 'lucide-react';
+import { Cpu, HardDrive, Globe, ShieldCheck, Box, Sparkles, ExternalLink } from 'lucide-react';
 import { SystemCapabilities } from '../types';
 
 interface HeaderProps {
@@ -8,41 +8,54 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
   return (
-    <header className="h-16 bg-[#0d131f] border-b border-gray-800 flex items-center justify-between px-6 select-none shrink-0">
-      {/* Brand */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-          <Box className="w-6 h-6 text-white" />
+    <header className="h-16 bg-[#FAF7EE] border-b-2 border-stone-900 flex items-center justify-between px-6 select-none shrink-0 shadow-[0_2px_0px_#18181B] z-20">
+      {/* Brand with Retro Window Controls */}
+      <div className="flex items-center gap-4">
+        {/* Retro Window Dot Controls */}
+        <div className="retro-dots">
+          <span className="retro-dot retro-dot-red" title="Close" />
+          <span className="retro-dot retro-dot-yellow" title="Minimize" />
+          <span className="retro-dot retro-dot-green" title="Expand" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xl tracking-tight text-white">PocketCloud</span>
-            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">
-              v0.1.0-alpha
+
+        <div className="h-6 w-[2px] bg-stone-900/20" />
+
+        <div className="flex items-center gap-3">
+          <div className="h-12 px-3.5 bg-white rounded-2xl border-2 border-stone-900 flex items-center gap-3 shadow-[3px_3px_0px_#18181B] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#18181B] transition-all cursor-default">
+            {/* Wide, Prominent PocketCloud Brand Lockup */}
+            <img 
+              src="/pocketcloud-logo-transparent.png" 
+              alt="PocketCloud" 
+              className="h-8 md:h-9 w-auto max-w-[220px] object-contain select-none" 
+            />
+
+            {/* Version Badge */}
+            <span className="retro-badge bg-[#C7F9CC] text-stone-900 text-[10px] font-black border border-stone-900 shadow-[1px_1px_0px_#18181B] self-center">
+              <Sparkles className="w-2.5 h-2.5 text-emerald-700" />
+              v0.1.0
             </span>
           </div>
-          <p className="text-xs text-gray-400">Zero-Cost Private Cloud & Full VPS Sandbox on Your Desktop</p>
         </div>
       </div>
 
-      {/* Telemetry Badges */}
+      {/* Retro Telemetry Pills */}
       <div className="flex items-center gap-3">
         {/* Docker Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#151d2d] border border-gray-800 text-xs">
-          <ShieldCheck className={`w-4 h-4 ${capabilities?.docker_available ? 'text-emerald-400' : 'text-amber-400'}`} />
-          <span className="text-gray-400">Docker:</span>
-          <span className={`font-semibold ${capabilities?.docker_available ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {capabilities?.docker_available ? capabilities.docker_version : 'Unavailable'}
+        <div className="retro-card px-3 py-1.5 flex items-center gap-2 text-xs font-bold text-stone-800 bg-[#E9D5FF]">
+          <ShieldCheck className={`w-4 h-4 ${capabilities?.docker_available ? 'text-emerald-700' : 'text-amber-700'}`} />
+          <span className="text-stone-700">Docker:</span>
+          <span className="font-black">
+            {capabilities?.docker_available ? capabilities.docker_version : 'Offline'}
           </span>
         </div>
 
         {/* CPU & Memory */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#151d2d] border border-gray-800 text-xs">
-          <Cpu className="w-4 h-4 text-cyan-400" />
-          <span className="text-gray-400">{capabilities?.cpu_cores || 8} vCPUs</span>
-          <span className="text-gray-600">|</span>
-          <HardDrive className="w-4 h-4 text-blue-400" />
-          <span className="text-gray-300">
+        <div className="retro-card px-3 py-1.5 flex items-center gap-2 text-xs font-bold text-stone-800 bg-[#FEF08A]">
+          <Cpu className="w-4 h-4 text-stone-900" />
+          <span>{capabilities?.cpu_cores || 8} vCPUs</span>
+          <span className="text-stone-400">|</span>
+          <HardDrive className="w-4 h-4 text-stone-900" />
+          <span>
             {capabilities ? `${Math.round(capabilities.available_memory_mb / 1024)}GB Free` : '16GB'}
           </span>
         </div>
@@ -52,12 +65,12 @@ export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
           href={capabilities?.gateway_url || 'http://127.0.0.1:18080'}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/60 text-cyan-400 text-xs transition"
+          className="retro-btn px-3 py-1.5 bg-[#BAE6FD] hover:bg-[#7dd3fc] text-stone-900 text-xs font-bold gap-2"
           title="Open local Host-Browser Gateway in host PC browser"
         >
-          <Globe className="w-4 h-4 text-cyan-400" />
-          <span>Host Gateway (127.0.0.1:18080)</span>
-          <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+          <Globe className="w-4 h-4 text-stone-900" />
+          <span>Gateway: 127.0.0.1:18080</span>
+          <ExternalLink className="w-3 h-3 opacity-80" />
         </a>
       </div>
     </header>

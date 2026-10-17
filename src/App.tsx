@@ -14,16 +14,27 @@ import { DnsManagerView } from './components/DnsManagerView';
 import { NetworkTesterView } from './components/NetworkTesterView';
 import { MissionsView } from './components/MissionsView';
 import { SettingsView } from './components/SettingsView';
+import { LoadingScreen } from './components/LoadingScreen';
 import { Lab, LabComponent, SystemCapabilities } from './types';
 import { api } from './services/api';
 
 export function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   const [capabilities, setCapabilities] = useState<SystemCapabilities | null>(null);
   const [labs, setLabs] = useState<Lab[]>([]);
   const [currentLab, setCurrentLab] = useState<Lab | null>(null);
   const [selectedComponentId, setSelectedComponentId] = useState<string | undefined>();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleRefreshCapabilities = async () => {
+    try {
+      const caps = await api.getCapabilities();
+      setCapabilities(caps);
+    } catch (e) {
+      console.error('Failed to refresh capabilities:', e);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -165,6 +176,16 @@ export function App() {
 
   const activeLabCount = labs.filter((l) => l.status === 'Running').length;
 
+  if (showSplash) {
+    return (
+      <LoadingScreen
+        capabilities={capabilities}
+        onComplete={() => setShowSplash(false)}
+        onRefreshCapabilities={handleRefreshCapabilities}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0b0f19] text-white">
       {/* Top Navbar */}
@@ -180,7 +201,7 @@ export function App() {
         />
 
         {/* Dynamic Center Viewport */}
-        <main className="flex-1 overflow-hidden relative bg-[#090d16]">
+        <main className="flex-1 overflow-hidden relative bg-[#FAF7EE]">
           {currentTab === 'dashboard' && (
             <DashboardView
               labs={labs}
@@ -223,7 +244,7 @@ export function App() {
           )}
 
           {currentTab === 'designer' && (
-            <div className="p-8 h-full">
+            <div className="p-4 h-full">
               <TopologyView
                 components={currentLab?.components || []}
                 onSelectComponent={setSelectedComponentId}
@@ -282,8 +303,8 @@ export function App() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#162238] border border-cyan-500/60 text-cyan-200 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-bounce">
-          <span className="w-2 h-2 rounded-full bg-cyan-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-[#FEF08A] border-2 border-stone-900 text-stone-900 px-4 py-2.5 rounded-xl shadow-[4px_4px_0px_#18181B] text-xs font-black font-mono flex items-center gap-2 animate-bounce">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-stone-900" />
           <span>{toastMessage}</span>
         </div>
       )}

@@ -56,7 +56,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
   // Add Node Modal Form State
   const [nodePreset, setNodePreset] = useState('ubuntu-24');
   const [customNodeName, setCustomNodeName] = useState('Ubuntu 24.04 LTS VPS');
-  const [customImage, setCustomImage] = useState('ubuntu:24.04');
+  const [customImage, setCustomImage] = useState('netlab/ubuntu-vps:24.04');
   const [customType, setCustomType] = useState('vps');
   const [customHostPort, setCustomHostPort] = useState('18022');
   const [customContainerPort, setCustomContainerPort] = useState('22');
@@ -138,12 +138,14 @@ export const LabsView: React.FC<LabsViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col p-8 space-y-6 select-none overflow-y-auto bg-[#090d16] text-slate-100">
+    <div className="h-full flex flex-col p-6 space-y-6 select-none overflow-y-auto bg-[#FAF7EE] text-stone-900">
       {/* Top action bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Lab Workspace</h1>
-          <p className="text-xs text-gray-400 mt-1">
+          <h1 className="text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+            <span>🧪</span> Lab Workspace & Environments
+          </h1>
+          <p className="text-xs text-stone-600 mt-1 font-medium">
             Manage your isolated local cloud labs, real Linux containers, and virtual infrastructure.
           </p>
         </div>
@@ -152,16 +154,16 @@ export const LabsView: React.FC<LabsViewProps> = ({
           <button
             onClick={handleQuickLaunchUbuntu}
             disabled={actionLoading === 'quick-ubuntu'}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-orange-950 transition cursor-pointer disabled:opacity-50"
+            className="retro-btn px-4 py-2 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 font-black text-xs gap-2 shadow-[3px_3px_0px_#18181B] cursor-pointer disabled:opacity-50"
             title="Download and boot an official Ubuntu 24.04 VM, then open its terminal"
           >
-            <Zap className={`w-4 h-4 ${actionLoading === 'quick-ubuntu' ? 'animate-spin' : ''}`} />
+            <Zap className={`w-4 h-4 text-amber-700 ${actionLoading === 'quick-ubuntu' ? 'animate-spin' : ''}`} />
             <span>Launch Ubuntu 24.04 VPS</span>
           </button>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-cyan-950 transition cursor-pointer"
+            className="retro-btn px-4 py-2 bg-[#C7F9CC] hover:bg-[#a7f3d0] text-stone-900 font-black text-xs gap-2 shadow-[3px_3px_0px_#18181B] cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Lab</span>
@@ -171,23 +173,23 @@ export const LabsView: React.FC<LabsViewProps> = ({
 
       {/* Lab Tabs */}
       {labs.length > 0 ? (
-        <div className="flex items-center gap-2 border-b border-gray-800 pb-3 overflow-x-auto">
+        <div className="flex items-center gap-2 pb-1 overflow-x-auto">
           {labs.map((lab) => {
             const isSelected = currentLab?.id === lab.id;
             return (
               <button
                 key={lab.id}
                 onClick={() => onSelectLab(lab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border-2 border-stone-900 ${
                   isSelected
-                    ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 shadow-sm'
-                    : 'bg-[#111827] text-gray-400 hover:text-gray-200 hover:bg-[#1a2336] border border-gray-800'
+                    ? 'bg-[#FEF08A] text-stone-900 shadow-[3px_3px_0px_#18181B]'
+                    : 'bg-white text-stone-700 hover:bg-[#F4EEDC] shadow-[2px_2px_0px_#18181B]'
                 }`}
               >
                 <span>{lab.name}</span>
                 <span
-                  className={`w-2 h-2 rounded-full ${
-                    lab.status === 'Running' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-600'
+                  className={`w-2.5 h-2.5 rounded-full border border-stone-900 ${
+                    lab.status === 'Running' ? 'bg-[#86EFAC]' : 'bg-stone-300'
                   }`}
                 />
               </button>
@@ -195,22 +197,22 @@ export const LabsView: React.FC<LabsViewProps> = ({
           })}
         </div>
       ) : (
-        <div className="bg-[#0f172a] border border-gray-800 rounded-xl p-12 text-center">
-          <AlertCircle className="w-10 h-10 text-cyan-400 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white mb-1">No Labs Created Yet</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto mb-4">
-            Get started by launching an Ubuntu 24.04 LTS VPS or Full Stack Web Lab.
+        <div className="retro-window bg-white shadow-[4px_4px_0px_#18181B] rounded-2xl p-12 text-center border-2 border-stone-900">
+          <AlertCircle className="w-10 h-10 text-amber-600 mx-auto mb-3" />
+          <h3 className="text-base font-black text-stone-900 mb-1">No Labs Created Yet</h3>
+          <p className="text-xs text-stone-600 max-w-sm mx-auto mb-5 font-medium">
+            Get started by launching a clean Ubuntu 24.04 LTS VPS or Full Stack Web Lab.
           </p>
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onCreateLab('Ubuntu 24.04 LTS Cloud Lab', 'Official Ubuntu 24.04 LTS environment', 'ubuntu-vps')}
-              className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg text-xs transition"
+              className="retro-btn px-4 py-2 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 font-bold text-xs"
             >
               Launch Ubuntu 24.04 Lab
             </button>
             <button
               onClick={() => onCreateLab('My First Cloud Lab', 'Starter isolated Linux lab with web server', 'vps-web')}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg text-xs transition"
+              className="retro-btn px-4 py-2 bg-[#BAE6FD] hover:bg-[#7dd3fc] text-stone-900 font-bold text-xs"
             >
               Launch Starter Stack
             </button>
@@ -220,24 +222,32 @@ export const LabsView: React.FC<LabsViewProps> = ({
 
       {/* Active Lab Component Table */}
       {currentLab && (
-        <div className="bg-[#0d1424] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
-          <div className="p-5 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111a2d]">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-white">{currentLab.name}</h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  ID: {currentLab.id}
-                </span>
+        <div className="retro-window bg-white shadow-[4px_4px_0px_#18181B] rounded-2xl overflow-hidden border-2 border-stone-900">
+          {/* Header Bar */}
+          <div className="p-4 border-b-2 border-stone-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F4EEDC]">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 mr-2">
+                <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
               </div>
-              <p className="text-xs text-gray-400 mt-1">{currentLab.description}</p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-black text-stone-900">{currentLab.name}</h2>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white text-stone-800 border border-stone-900 font-bold shadow-[1px_1px_0px_#18181B]">
+                    ID: {currentLab.id}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 mt-0.5 font-medium">{currentLab.description}</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400">
-                {currentLab.components.filter((c) => c.status === 'running').length} / {currentLab.components.length} nodes running
+              <span className="text-xs font-bold text-stone-700 bg-white px-2.5 py-1 rounded-lg border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                {currentLab.components.filter((c) => c.status === 'running').length} / {currentLab.components.length} nodes active
               </span>
               <button
                 onClick={() => setShowAddNodeModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a253c] hover:bg-[#233352] text-cyan-300 border border-cyan-700/60 rounded-lg text-xs font-semibold transition cursor-pointer"
+                className="retro-btn px-3 py-1.5 bg-[#BAE6FD] hover:bg-[#7dd3fc] text-stone-900 text-xs font-bold gap-1.5 shadow-[2px_2px_0px_#18181B]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Node</span>
@@ -247,64 +257,76 @@ export const LabsView: React.FC<LabsViewProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#090d16] text-gray-400 border-b border-gray-800 uppercase tracking-wider text-[11px] font-sans">
+              <thead className="bg-[#FAF7EE] text-stone-800 border-b-2 border-stone-900 uppercase tracking-wider text-[11px] font-sans font-black">
                 <tr>
-                  <th className="p-4">Component</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Runtime</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">IP Address</th>
-                  <th className="p-4">Port Forwarding</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-3.5">Component</th>
+                  <th className="p-3.5">Type</th>
+                  <th className="p-3.5">Runtime</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">IP Address</th>
+                  <th className="p-3.5">Port Forwarding</th>
+                  <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y-2 divide-stone-200">
                 {currentLab.components.map((comp) => {
                   const isRunning = comp.status === 'running';
                   const isLoading = actionLoading === comp.id;
 
                   return (
-                    <tr key={comp.id} className="hover:bg-[#121c33]/50 transition">
-                      <td className="p-4 font-semibold text-white flex items-center gap-2.5">
-                        {comp.component_type === 'vps' && <Server className="w-4 h-4 text-blue-400" />}
-                        {comp.component_type === 'web' && <Globe className="w-4 h-4 text-cyan-400" />}
-                        {comp.component_type === 'database' && <Database className="w-4 h-4 text-purple-400" />}
+                    <tr key={comp.id} className="hover:bg-[#FAF7EE]/70 transition">
+                      <td className="p-3.5 font-semibold text-stone-900 flex items-center gap-2.5">
+                        {comp.component_type === 'vps' && (
+                          <div className="p-1.5 bg-[#FEF08A] rounded-lg border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                            <Server className="w-4 h-4 text-stone-900" />
+                          </div>
+                        )}
+                        {comp.component_type === 'web' && (
+                          <div className="p-1.5 bg-[#BAE6FD] rounded-lg border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                            <Globe className="w-4 h-4 text-stone-900" />
+                          </div>
+                        )}
+                        {comp.component_type === 'database' && (
+                          <div className="p-1.5 bg-[#F3E8FF] rounded-lg border border-stone-900 shadow-[1px_1px_0px_#18181B]">
+                            <Database className="w-4 h-4 text-stone-900" />
+                          </div>
+                        )}
                         <div>
-                          <div className="font-sans font-bold">{comp.name}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{comp.image}</div>
+                          <div className="font-sans font-black text-stone-900">{comp.name}</div>
+                          <div className="text-[10px] text-stone-500 font-mono font-medium">{comp.image}</div>
                         </div>
                       </td>
-                      <td className="p-4 uppercase text-gray-400 font-mono text-[11px]">{comp.component_type}</td>
-                      <td className="p-4">
-                        <span className="px-2 py-0.5 rounded text-[11px] bg-gray-800 text-gray-300 font-sans">
-                          {comp.runtime_mode === 'qemu' ? 'QEMU Virtual Machine' : comp.runtime_mode === 'docker' ? 'Docker Engine' : 'Simulated'}
+                      <td className="p-3.5 uppercase text-stone-700 font-mono text-[11px] font-bold">{comp.component_type}</td>
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 rounded text-[11px] bg-[#FAF7EE] text-stone-800 font-sans font-bold border border-stone-400">
+                          {comp.runtime_mode === 'qemu' ? 'QEMU VM' : comp.runtime_mode === 'docker' ? 'Docker Engine' : 'Simulated'}
                         </span>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3.5">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold font-sans ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black font-sans border border-stone-900 shadow-[1px_1px_0px_#18181B] ${
                             isRunning
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                              : 'bg-gray-800 text-gray-400'
+                              ? 'bg-[#86EFAC] text-stone-900'
+                              : 'bg-[#E5E7EB] text-stone-600'
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-emerald-400' : 'bg-gray-500'}`} />
+                          <span className={`w-2 h-2 rounded-full border border-stone-900 ${isRunning ? 'bg-emerald-600' : 'bg-stone-400'}`} />
                           {isRunning ? 'Running' : 'Stopped'}
                         </span>
                       </td>
-                      <td className="p-4 font-mono text-gray-300">{comp.ip_address || '—'}</td>
-                      <td className="p-4 font-mono text-cyan-400">
+                      <td className="p-3.5 font-mono font-bold text-stone-800">{comp.ip_address || '—'}</td>
+                      <td className="p-3.5 font-mono font-bold text-blue-700">
                         {comp.host_port ? `127.0.0.1:${comp.host_port} -> ${comp.container_port || 80}` : '—'}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-2 font-sans">
                           <button
                             onClick={() => handleToggleComponent(comp)}
                             disabled={isLoading}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                            className={`retro-btn px-2.5 py-1 text-xs font-black shadow-[2px_2px_0px_#18181B] gap-1 cursor-pointer ${
                               isRunning
-                                ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800'
-                                : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800'
+                                ? 'bg-[#FDA4AF] hover:bg-[#fb7185] text-stone-900'
+                                : 'bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900'
                             }`}
                           >
                             {isRunning ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -315,7 +337,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
                             <>
                               <button
                                 onClick={() => onOpenTerminal(comp.id)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#172238] hover:bg-[#1e2d4a] text-cyan-300 rounded-lg text-xs font-semibold transition cursor-pointer"
+                                className="retro-btn px-2.5 py-1 bg-[#BAE6FD] hover:bg-[#7dd3fc] text-stone-900 text-xs font-black shadow-[2px_2px_0px_#18181B] gap-1 cursor-pointer"
                                 title="Open Terminal"
                               >
                                 <Terminal className="w-3.5 h-3.5" />
@@ -327,7 +349,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
                                   href={`http://127.0.0.1:${comp.host_port}/`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="flex items-center gap-1 px-2.5 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/80 rounded-lg text-xs font-semibold transition"
+                                  className="retro-btn px-2.5 py-1 bg-[#FEF08A] hover:bg-[#fde047] text-stone-900 text-xs font-black shadow-[2px_2px_0px_#18181B] gap-1 inline-flex items-center"
                                   title="Open in Host Browser"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
@@ -349,15 +371,22 @@ export const LabsView: React.FC<LabsViewProps> = ({
 
       {/* Add Infrastructure Node Modal */}
       {showAddNodeModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-2">Add Infrastructure Node</h2>
-            <p className="text-xs text-gray-400 mb-6">
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="retro-window bg-[#FAF7EE] border-3 border-stone-900 rounded-2xl max-w-md w-full p-6 shadow-[8px_8px_0px_#18181B]">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <h2 className="text-base font-black text-stone-900 ml-2">Add Infrastructure Node</h2>
+              </div>
+            </div>
+            <p className="text-xs text-stone-600 mb-5 font-medium">
               Deploy an isolated Linux container node to the current active lab.
             </p>
             <form onSubmit={handleAddNodeSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Preset Template</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Preset Template</label>
                 <select
                   value={nodePreset}
                   onChange={(e) => {
@@ -395,7 +424,7 @@ export const LabsView: React.FC<LabsViewProps> = ({
                       setCustomContainerPort('5432');
                     }
                   }}
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                 >
                   <option value="ubuntu-24">Ubuntu 24.04 LTS (Noble Numbat)</option>
                   <option value="debian-12">Debian 12 Bookworm</option>
@@ -407,62 +436,62 @@ export const LabsView: React.FC<LabsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Node Display Name</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Node Display Name</label>
                 <input
                   type="text"
                   required
                   value={customNodeName}
                   onChange={(e) => setCustomNodeName(e.target.value)}
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Docker Image</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Docker Image</label>
                 <input
                   type="text"
                   required
                   value={customImage}
                   onChange={(e) => setCustomImage(e.target.value)}
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono outline-none focus:border-cyan-500"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1">Host Port</label>
+                  <label className="block text-xs font-black text-stone-800 mb-1">Host Port</label>
                   <input
                     type="number"
                     value={customHostPort}
                     onChange={(e) => setCustomHostPort(e.target.value)}
                     placeholder="18022"
-                    className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono outline-none focus:border-cyan-500"
+                    className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1">Container Port</label>
+                  <label className="block text-xs font-black text-stone-800 mb-1">Container Port</label>
                   <input
                     type="number"
                     value={customContainerPort}
                     onChange={(e) => setCustomContainerPort(e.target.value)}
                     placeholder="22"
-                    className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono outline-none focus:border-cyan-500"
+                    className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-stone-900">
                 <button
                   type="button"
                   onClick={() => setShowAddNodeModal(false)}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-semibold transition cursor-pointer"
+                  className="retro-btn px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading === 'add-node'}
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  className="retro-btn px-4 py-2 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 text-xs font-black disabled:opacity-50"
                 >
                   Deploy Node
                 </button>
@@ -474,41 +503,48 @@ export const LabsView: React.FC<LabsViewProps> = ({
 
       {/* Create Lab Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-2">Create New Lab</h2>
-            <p className="text-xs text-gray-400 mb-6">
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="retro-window bg-[#FAF7EE] border-3 border-stone-900 rounded-2xl max-w-md w-full p-6 shadow-[8px_8px_0px_#18181B]">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-stone-900 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+                <h2 className="text-base font-black text-stone-900 ml-2">Create New Lab</h2>
+              </div>
+            </div>
+            <p className="text-xs text-stone-600 mb-5 font-medium">
               Create an isolated cloud workspace with starter containers and network routing.
             </p>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Lab Name</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Lab Name</label>
                 <input
                   type="text"
                   required
                   value={newLabName}
                   onChange={(e) => setNewLabName(e.target.value)}
                   placeholder="e.g. Ubuntu 24.04 Production Cluster"
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Description</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Description</label>
                 <textarea
                   value={newLabDesc}
                   onChange={(e) => setNewLabDesc(e.target.value)}
                   placeholder="e.g. Dedicated Ubuntu VPS environment with Nginx and PostgreSQL"
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500 h-20 resize-none"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none h-20 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Initial Template</label>
+                <label className="block text-xs font-black text-stone-800 mb-1">Initial Template</label>
                 <select
                   value={newLabTemplate}
                   onChange={(e) => setNewLabTemplate(e.target.value)}
-                  className="w-full bg-[#172238] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+                  className="w-full bg-white border-2 border-stone-900 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 shadow-[2px_2px_0px_#18181B] outline-none"
                 >
                   <option value="ubuntu-vps">Ubuntu 24.04 LTS Dedicated VPS Lab (Recommended)</option>
                   <option value="vps-web">Full Stack (Alpine VPS + Nginx + PostgreSQL)</option>
@@ -516,17 +552,17 @@ export const LabsView: React.FC<LabsViewProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-stone-900">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-semibold transition cursor-pointer"
+                  className="retro-btn px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                  className="retro-btn px-4 py-2 bg-[#86EFAC] hover:bg-[#4ade80] text-stone-900 text-xs font-black"
                 >
                   Create Lab
                 </button>

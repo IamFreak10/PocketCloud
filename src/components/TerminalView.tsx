@@ -492,32 +492,26 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const displayCurrentPath = getDisplayPath(currentCwd);
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e] rounded-2xl border border-gray-800 overflow-hidden shadow-2xl select-none font-sans">
+    <div className="flex flex-col h-full bg-[#1e1e1e] rounded-2xl border-2 border-stone-900 overflow-hidden shadow-[4px_4px_0px_#18181B] select-none font-sans">
       {/* Authentic Ubuntu GNOME Terminal Title Bar */}
-      <div className="h-11 bg-[#241f31] border-b border-black/40 flex items-center justify-between px-4 select-none">
+      <div className="h-11 bg-[#241f31] border-b-2 border-stone-900 flex items-center justify-between px-4 select-none">
         {/* Left: Classic Ubuntu GNOME Window Controls & Active Tab */}
         <div className="flex items-center gap-3">
-          {/* Ubuntu Yaru Window Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Retro Window Buttons */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => xtermInstance.current?.clear()}
-              className="w-3.5 h-3.5 rounded-full bg-[#e95420] hover:brightness-125 transition flex items-center justify-center text-[10px] text-white opacity-80 hover:opacity-100"
-              title="Close / Reset Buffer"
-            >
-              ×
-            </button>
-            <div className="w-3.5 h-3.5 rounded-full bg-[#3e3848] flex items-center justify-center text-[10px] text-gray-400">
-              -
-            </div>
-            <div className="w-3.5 h-3.5 rounded-full bg-[#3e3848] flex items-center justify-center text-[10px] text-gray-400">
-              +
-            </div>
+              className="w-3 h-3 rounded-full bg-[#FF5F56] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B] cursor-pointer"
+              title="Clear Terminal Buffer"
+            />
+            <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
+            <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-stone-900 inline-block shadow-[1px_1px_0px_#18181B]" />
           </div>
 
-          <div className="h-4 w-[1px] bg-white/10 mx-1" />
+          <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
           {/* Active Terminal Tab */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#300a24] border border-[#e95420]/50 text-xs font-mono text-white shadow-sm">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-[#300a24] border border-[#e95420]/60 text-xs font-mono text-white shadow-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-orange-200">
               {isUbuntu ? 'Ubuntu 24.04 LTS' : activeComp?.name || 'Linux Terminal'}

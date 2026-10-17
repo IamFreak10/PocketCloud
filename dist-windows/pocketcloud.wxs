@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="PocketCloud"
+           Language="1033"
+           Version="0.1.0"
+           Manufacturer="PocketCloud Team"
+           UpgradeCode="B9A14930-179B-4DCE-BE76-885E22A26B74">
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="PocketCloud — Zero-Cost Private Cloud &amp; Full VPS Sandbox" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of PocketCloud is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="PocketCloud">
+          <Component Id="MainExecutable" Guid="8FD2E1C3-3B6F-4C18-CF33-9455C26D9AF4">
+            <File Id="PocketCloudExe" Source="PocketCloud.exe" KeyPath="yes" />
+            <File Id="PocketCloudIcon" Source="../src-tauri/icons/icon.ico" />
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="PocketCloud">
+          <Component Id="ApplicationShortcut" Guid="7CD1F1B2-2C5E-4B07-BE22-8344B15C8FE3">
+            <Shortcut Id="AppStartMenuShortcut"
+                      Name="PocketCloud"
+                      Description="PocketCloud — Private Cloud &amp; Full VPS Sandbox"
+                      Target="[INSTALLFOLDER]PocketCloud.exe"
+                      WorkingDirectory="INSTALLFOLDER" />
+            <RemoveFolder Id="CleanUpShortCut" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\PocketCloud" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id="ProductFeature" Title="PocketCloud" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+  </Product>
+</Wix>

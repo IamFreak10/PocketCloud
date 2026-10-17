@@ -105,13 +105,7 @@ async fn browse_handler(
         Some(record.host_port)
     } else {
         let routes = state.routes.read().unwrap();
-        routes.get(&domain).cloned().or_else(|| {
-            if domain.ends_with(".test") || domain == "localhost" || domain == "127.0.0.1" {
-                Some(8080)
-            } else {
-                None
-            }
-        })
+        routes.get(&domain).cloned()
     };
 
     if let Some(host_port) = resolved_port {
