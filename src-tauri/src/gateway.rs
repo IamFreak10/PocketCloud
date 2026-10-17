@@ -1,17 +1,30 @@
 use crate::dns::DnsEngine;
 use axum::{
+    Router,
     extract::{Path, State},
-    http::{header, HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header},
     response::{Html, IntoResponse},
     routing::get,
-    Router,
 };
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 use tokio::net::TcpListener;
 
-
+pub fn html_escape(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len());
+    for c in input.chars() {
+        match c {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#x27;"),
+            _ => escaped.push(c),
+        }
+    }
+    escaped
+}
 
 #[derive(Clone)]
 pub struct GatewayState {
@@ -110,11 +123,17 @@ async fn browse_handler(
 
     if let Some(host_port) = resolved_port {
         let mut res = forward_to_port(host_port, &uri_path, &domain).await;
-        res.headers_mut().insert("X-NetLab-DNS-Resolved", domain.parse().unwrap());
-        res.headers_mut().insert("X-NetLab-Target-Port", host_port.to_string().parse().unwrap());
-        res.headers_mut().insert("Access-Control-Allow-Origin", "*".parse().unwrap());
+        res.headers_mut()
+            .insert("X-NetLab-DNS-Resolved", domain.parse().unwrap());
+        res.headers_mut().insert(
+            "X-NetLab-Target-Port",
+            host_port.to_string().parse().unwrap(),
+        );
+        res.headers_mut()
+            .insert("Access-Control-Allow-Origin", "*".parse().unwrap());
         res
     } else {
+        let safe_domain = html_escape(&domain);
         let error_html = format!(
             r#"<!DOCTYPE html>
 <html>
@@ -144,7 +163,7 @@ async fn browse_handler(
     </div>
 </body>
 </html>"#,
-            domain, domain
+            safe_domain, safe_domain
         );
         (
             StatusCode::NOT_FOUND,
@@ -169,7 +188,7 @@ async fn dashboard_handler(State(state): State<GatewayState>) -> Html<String> {
         for (domain, port) in routes.iter() {
             routes_html.push_str(&format!(
                 "<tr class='border-b border-gray-800'><td class='p-3 font-mono text-cyan-400'>{}</td><td class='p-3 text-emerald-400 font-mono'>127.0.0.1:{}</td><td class='p-3'><a href='http://127.0.0.1:{}/' target='_blank' class='px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-sm'>Open Direct</a></td></tr>",
-                domain, port, port
+                html_escape(domain), port, port
             ));
         }
     }
@@ -178,7 +197,7 @@ async fn dashboard_handler(State(state): State<GatewayState>) -> Html<String> {
     for (comp, port) in comp_ports.iter() {
         comps_html.push_str(&format!(
             "<tr class='border-b border-gray-800'><td class='p-3 font-mono text-blue-400'>{}</td><td class='p-3 text-emerald-400 font-mono'>:{}</td><td class='p-3'><a href='http://127.0.0.1:{}/' target='_blank' class='px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm'>Access</a></td></tr>",
-            comp, port, port
+            html_escape(comp), port, port
         ));
     }
 
@@ -269,7 +288,11 @@ async fn dynamic_host_handler(
         .unwrap_or("");
 
     let domain = host_header.split(':').next().unwrap_or("").to_lowercase();
-    let uri_path = req.uri().path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+    let uri_path = req
+        .uri()
+        .path_and_query()
+        .map(|pq| pq.as_str())
+        .unwrap_or("/");
 
     let target_port = {
         if let Some(record) = state.dns.resolve(&domain) {
@@ -289,9 +312,10 @@ async fn dynamic_host_handler(
     if let Some(port) = target_port {
         forward_to_port(port, uri_path, &domain).await
     } else {
+        let safe_domain = html_escape(&domain);
         let error_html = format!(
             r#"<!DOCTYPE html><html><head><title>502 Bad Gateway / NXDOMAIN</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-slate-950 text-slate-200 p-8 flex items-center justify-center min-h-screen"><div class="bg-slate-900 border border-slate-800 p-6 rounded-xl max-w-md"><h1 class="text-xl font-bold text-rose-400 mb-2">502 Bad Gateway / Route Not Found</h1><p class="text-xs text-slate-400 mb-4">Domain <code>{}</code> is not mapped to any running lab component in NetLab.</p><a href="/" class="text-cyan-400 text-xs hover:underline">&larr; View Active Routes on NetLab Gateway</a></div></body></html>"#,
-            domain
+            safe_domain
         );
         (
             StatusCode::NOT_FOUND,
@@ -320,9 +344,10 @@ async fn forward_to_port(port: u16, path: &str, host_header: &str) -> axum::resp
                 .into_response()
         }
         Err(err) => {
+            let safe_err = html_escape(&err);
             let error_html = format!(
                 r#"<!DOCTYPE html><html><head><title>502 Connection Refused</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-slate-950 text-slate-200 p-8 flex items-center justify-center min-h-screen"><div class="bg-slate-900 border border-amber-800/80 p-6 rounded-xl max-w-md"><h1 class="text-xl font-bold text-amber-400 mb-2">502 Connection Refused</h1><p class="text-xs text-slate-300 mb-4">Failed to connect to internal container on <code>127.0.0.1:{}</code>: {}</p><p class="text-[11px] text-slate-500">Make sure your container or web service is running and listening on the mapped port.</p></div></body></html>"#,
-                port, err
+                port, safe_err
             );
             (
                 StatusCode::BAD_GATEWAY,
@@ -337,7 +362,11 @@ async fn forward_to_port(port: u16, path: &str, host_header: &str) -> axum::resp
     }
 }
 
-async fn reqwest_stream_fetch(port: u16, path: &str, host_header: &str) -> Result<(StatusCode, Option<String>, Vec<u8>), String> {
+async fn reqwest_stream_fetch(
+    port: u16,
+    path: &str,
+    host_header: &str,
+) -> Result<(StatusCode, Option<String>, Vec<u8>), String> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpStream;
 
@@ -381,7 +410,13 @@ async fn reqwest_stream_fetch(port: u16, path: &str, host_header: &str) -> Resul
     let content_type = headers_part
         .lines()
         .find(|l| l.to_lowercase().starts_with("content-type:"))
-        .map(|l| l.split(':').nth(1).unwrap_or("text/html").trim().to_string());
+        .map(|l| {
+            l.split(':')
+                .nth(1)
+                .unwrap_or("text/html")
+                .trim()
+                .to_string()
+        });
 
     let body = if response_bytes.len() >= body_offset {
         response_bytes[body_offset..].to_vec()

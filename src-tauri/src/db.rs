@@ -1,5 +1,5 @@
 use crate::models::{GatewayRoute, Lab, LabComponent};
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result, params};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -99,7 +99,9 @@ impl Database {
 
     pub fn list_labs(&self) -> Result<Vec<Lab>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT id, name, description, status, created_at FROM labs ORDER BY created_at DESC")?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, description, status, created_at FROM labs ORDER BY created_at DESC",
+        )?;
         let lab_iter = stmt.query_map([], |row| {
             Ok(Lab {
                 id: row.get(0)?,

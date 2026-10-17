@@ -32,7 +32,7 @@ pub struct LabComponent {
     pub component_type: String, // "vps", "web", "app", "database", "dns", "router"
     pub runtime_mode: String,   // "docker", "simulated"
     pub image: String,
-    pub status: String,         // "stopped", "starting", "running", "error"
+    pub status: String, // "stopped", "starting", "running", "error"
     pub container_id: Option<String>,
     pub ip_address: Option<String>,
     pub host_port: Option<u16>,
@@ -108,4 +108,3 @@ pub struct DockerImageInfo {
     pub size_mb: f64,
     pub created: String,
 }
-

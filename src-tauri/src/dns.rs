@@ -76,10 +76,16 @@ impl DnsEngine {
             let latency = start.elapsed().as_millis() as u64;
 
             let ttl = record.as_ref().map(|r| r.ttl).unwrap_or(60);
-            let rec_type = record.as_ref().map(|r| r.record_type.clone()).unwrap_or_else(|| "DIRECT".to_string());
+            let rec_type = record
+                .as_ref()
+                .map(|r| r.record_type.clone())
+                .unwrap_or_else(|| "DIRECT".to_string());
 
             let mut headers = HashMap::new();
-            headers.insert("X-NetLab-DNS-Status".to_string(), "NOERROR (Resolved)".to_string());
+            headers.insert(
+                "X-NetLab-DNS-Status".to_string(),
+                "NOERROR (Resolved)".to_string(),
+            );
             headers.insert("X-NetLab-TTL".to_string(), format!("{}s", ttl));
             headers.insert("X-NetLab-Target-Port".to_string(), host_port.to_string());
 

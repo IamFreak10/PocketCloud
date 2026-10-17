@@ -970,4 +970,522 @@ mod tests {
         let _ = app_state_restarted.docker.remove_container(&cid).await;
         let _ = app_state_restarted.db.delete_lab(lab_id);
     }
+
+    #[tokio::test]
+    async fn test_phase8_independent_multi_vps_isolation_and_evidence_export() {
+        let app_state = create_test_app_state();
+        if !app_state.docker.is_available() {
+            println!("Docker not available, skipping independent multi-VPS audit");
+            return;
+        }
+
+        // Clean any stale containers
+        let _ = app_state.docker.stop_container("netlab_audit_alpha").await;
+        let _ = app_state
+            .docker
+            .remove_container("netlab_audit_alpha")
+            .await;
+        let _ = app_state.docker.stop_container("netlab_audit_beta").await;
+        let _ = app_state.docker.remove_container("netlab_audit_beta").await;
+
+        // 1. Create two distinct Ubuntu VPS instances
+        let (cid_a, ip_a) = app_state
+            .docker
+            .start_container(
+                "netlab_audit_alpha",
+                "ubuntu:24.04",
+                Some(18041),
+                Some(22),
+                vec!["VPS_INSTANCE=ALPHA".to_string()],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                Some("host".to_string()),
+            )
+            .await
+            .expect("Failed to start Alpha VPS container");
+
+        let (cid_b, ip_b) = app_state
+            .docker
+            .start_container(
+                "netlab_audit_beta",
+                "ubuntu:24.04",
+                Some(18042),
+                Some(22),
+                vec!["VPS_INSTANCE=BETA".to_string()],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                Some("host".to_string()),
+            )
+            .await
+            .expect("Failed to start Beta VPS container");
+
+        assert_ne!(cid_a, cid_b, "Containers must have unique Docker IDs");
+
+        let lab_id = "lab-independent-audit";
+        let vps_a_id = "vps-audit-alpha";
+        let vps_b_id = "vps-audit-beta";
+
+        let audit_lab = Lab {
+            id: lab_id.to_string(),
+            name: "Independent Multi-VPS Audit Lab".to_string(),
+            description: "Lab for multi-VPS isolation testing".to_string(),
+            status: "Running".to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            components: vec![
+                LabComponent {
+                    id: vps_a_id.to_string(),
+                    lab_id: lab_id.to_string(),
+                    name: "Alpha Ubuntu VPS Node".to_string(),
+                    component_type: "vps".to_string(),
+                    runtime_mode: "docker".to_string(),
+                    image: "ubuntu:24.04".to_string(),
+                    status: "running".to_string(),
+                    container_id: Some(cid_a.clone()),
+                    ip_address: ip_a,
+                    host_port: Some(18041),
+                    container_port: Some(22),
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                },
+                LabComponent {
+                    id: vps_b_id.to_string(),
+                    lab_id: lab_id.to_string(),
+                    name: "Beta Ubuntu VPS Node".to_string(),
+                    component_type: "vps".to_string(),
+                    runtime_mode: "docker".to_string(),
+                    image: "ubuntu:24.04".to_string(),
+                    status: "running".to_string(),
+                    container_id: Some(cid_b.clone()),
+                    ip_address: ip_b,
+                    host_port: Some(18042),
+                    container_port: Some(22),
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                },
+            ],
+            routes: vec![],
+        };
+
+        app_state
+            .db
+            .save_lab(&audit_lab)
+            .expect("Failed to save audit lab");
+
+        // 2. Execute all 8 required commands against Alpha and compare with Docker
+        let test_commands = vec![
+            "whoami",
+            "cat /etc/os-release",
+            "pwd",
+            "id",
+            "command -v apt-get",
+            "command -v ip",
+            "ip addr",
+            "printf 'pocketcloud-independent-audit\\n'",
+        ];
+
+        let mut command_records = Vec::new();
+
+        for cmd in &test_commands {
+            // PocketCloud execution path
+            let pc_res = crate::commands::exec_command_internal(
+                &app_state,
+                vps_a_id.to_string(),
+                cmd.to_string(),
+                "docker".to_string(),
+                None,
+            )
+            .await
+            .expect(&format!("PocketCloud command execution failed for {}", cmd));
+
+            // Direct Docker execution path
+            let docker_res = app_state
+                .docker
+                .exec_command(&cid_a, vec!["bash", "-c", cmd])
+                .await
+                .expect(&format!("Direct Docker execution failed for {}", cmd));
+
+            assert_eq!(
+                pc_res.exit_code, docker_res.exit_code,
+                "Exit code mismatch for {}",
+                cmd
+            );
+
+            command_records.push(serde_json::json!({
+                "command": cmd,
+                "app_vps_id": vps_a_id,
+                "resolved_runtime_id": cid_a,
+                "pocketcloud_stdout": pc_res.stdout,
+                "pocketcloud_stderr": pc_res.stderr,
+                "pocketcloud_exit_code": pc_res.exit_code,
+                "direct_docker_stdout": docker_res.stdout,
+                "direct_docker_stderr": docker_res.stderr,
+                "direct_docker_exit_code": docker_res.exit_code,
+            }));
+        }
+
+        // 3. Test filesystem persistence on Alpha
+        let write_marker = crate::commands::exec_command_internal(
+            &app_state,
+            vps_a_id.to_string(),
+            "printf 'independent-persistence-check\\n' > /tmp/pocketcloud-independent-audit.txt"
+                .to_string(),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Failed to write persistence check file");
+        assert_eq!(write_marker.exit_code, 0);
+
+        let read_marker = crate::commands::exec_command_internal(
+            &app_state,
+            vps_a_id.to_string(),
+            "cat /tmp/pocketcloud-independent-audit.txt".to_string(),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Failed to read persistence check file");
+        assert_eq!(read_marker.exit_code, 0);
+        assert_eq!(read_marker.stdout.trim(), "independent-persistence-check");
+
+        // 4. Test Multi-VPS Isolation
+        let token_alpha = "alpha-token-9812";
+        let token_beta = "beta-token-4371";
+
+        let _ = crate::commands::exec_command_internal(
+            &app_state,
+            vps_a_id.to_string(),
+            format!("printf '{}\\n' > /tmp/vps_isolation.txt", token_alpha),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Write Alpha token failed");
+
+        let _ = crate::commands::exec_command_internal(
+            &app_state,
+            vps_b_id.to_string(),
+            format!("printf '{}\\n' > /tmp/vps_isolation.txt", token_beta),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Write Beta token failed");
+
+        // Verify Alpha has Alpha's token
+        let res_alpha = crate::commands::exec_command_internal(
+            &app_state,
+            vps_a_id.to_string(),
+            "cat /tmp/vps_isolation.txt".to_string(),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Read Alpha token failed");
+        assert_eq!(res_alpha.stdout.trim(), token_alpha);
+
+        // Verify Beta has Beta's token
+        let res_beta = crate::commands::exec_command_internal(
+            &app_state,
+            vps_b_id.to_string(),
+            "cat /tmp/vps_isolation.txt".to_string(),
+            "docker".to_string(),
+            None,
+        )
+        .await
+        .expect("Read Beta token failed");
+        assert_eq!(res_beta.stdout.trim(), token_beta);
+
+        // Cross-contamination assertion: Alpha must NOT have Beta's token
+        assert_ne!(res_alpha.stdout.trim(), res_beta.stdout.trim());
+
+        // 5. Export evidence JSON to artifacts/independent-audit/evidence_log.json
+        let evidence_payload = serde_json::json!({
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "docker_engine": "Native Linux Socket",
+            "containers": {
+                "alpha": {
+                    "vps_id": vps_a_id,
+                    "container_id": cid_a,
+                    "image": "ubuntu:24.04",
+                    "marker": token_alpha
+                },
+                "beta": {
+                    "vps_id": vps_b_id,
+                    "container_id": cid_b,
+                    "image": "ubuntu:24.04",
+                    "marker": token_beta
+                }
+            },
+            "commands": command_records,
+            "isolation_verified": true,
+            "persistence_verified": true
+        });
+
+        let _ =
+            std::fs::create_dir_all("/home/iamfreak/Projects/netlab/artifacts/independent-audit");
+        std::fs::write(
+            "/home/iamfreak/Projects/netlab/artifacts/independent-audit/evidence_log.json",
+            serde_json::to_string_pretty(&evidence_payload).unwrap(),
+        )
+        .expect("Failed to write evidence_log.json");
+
+        // Cleanup
+        let _ = app_state.docker.stop_container(&cid_a).await;
+        let _ = app_state.docker.remove_container(&cid_a).await;
+        let _ = app_state.docker.stop_container(&cid_b).await;
+        let _ = app_state.docker.remove_container(&cid_b).await;
+        let _ = app_state.db.delete_lab(lab_id);
+    }
+
+    #[tokio::test]
+    async fn test_security_gateway_reflected_xss_prevention() {
+        use crate::gateway::{HostGateway, html_escape};
+        let dns = Arc::new(DnsEngine::new());
+        let gateway_port = 18097;
+        let gateway = HostGateway::new(gateway_port, dns.clone());
+        let _ = gateway.start().await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+        // 1. Direct unit test of html_escape
+        assert_eq!(
+            html_escape("<script>alert('xss')</script>"),
+            "&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;"
+        );
+        assert_eq!(html_escape("test\"&'<>"), "test&quot;&amp;&#x27;&lt;&gt;");
+
+        // 2. HTTP Request with XSS payload in URL
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::net::TcpStream;
+
+        let host_port = format!("127.0.0.1:{}", gateway_port);
+        let mut stream = TcpStream::connect(&host_port)
+            .await
+            .expect("Failed to connect to gateway");
+        let req = format!(
+            "GET /browse?url=http%3A%2F%2F%3Cscript%3Ealert(1)%3C%2Fscript%3E HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+            host_port
+        );
+        stream
+            .write_all(req.as_bytes())
+            .await
+            .expect("Failed to write to gateway");
+
+        let mut response_bytes = Vec::new();
+        stream
+            .read_to_end(&mut response_bytes)
+            .await
+            .expect("Failed to read from gateway");
+        let res_str = String::from_utf8_lossy(&response_bytes);
+
+        assert!(
+            res_str.contains("&lt;script&gt;alert(1)&lt;"),
+            "Browse response must contain properly HTML-escaped text: {}",
+            res_str
+        );
+        assert!(
+            !res_str.contains("<script>"),
+            "Browse response must NOT contain raw unescaped script tag"
+        );
+
+        // 3. HTTP Request with XSS payload in Host header directly to dynamic_host_handler
+        let mut stream2 = TcpStream::connect(&host_port)
+            .await
+            .expect("Failed to connect to gateway");
+        let req2 = format!(
+            "GET /unmapped-path HTTP/1.1\r\nHost: xss-domain<script>alert(2)</script>\r\nConnection: close\r\n\r\n"
+        );
+        stream2
+            .write_all(req2.as_bytes())
+            .await
+            .expect("Failed to write to gateway");
+
+        let mut response_bytes2 = Vec::new();
+        stream2
+            .read_to_end(&mut response_bytes2)
+            .await
+            .expect("Failed to read from gateway");
+        let res_str2 = String::from_utf8_lossy(&response_bytes2);
+
+        assert!(
+            res_str2.contains("&lt;script&gt;alert(2)&lt;/script&gt;"),
+            "Dynamic host response must contain properly HTML-escaped text: {}",
+            res_str2
+        );
+        assert!(
+            !res_str2.contains("<script>alert(2)</script>"),
+            "Dynamic host response must NOT contain raw unescaped script tag"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_security_docker_exec_timeout_handling() {
+        use crate::docker::DockerManager;
+        let docker = DockerManager::new();
+        if !docker.is_available() {
+            println!("Docker daemon not available, skipping timeout security test");
+            return;
+        }
+
+        let container_name = "netlab_security_timeout_test";
+        let _ = docker.stop_container(container_name).await;
+        let _ = docker.remove_container(container_name).await;
+
+        let (cid, _) = docker
+            .start_container(
+                container_name,
+                "alpine:latest",
+                None,
+                None,
+                vec![],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                None,
+            )
+            .await
+            .expect("Failed to start alpine test container");
+
+        // 1. Test normal command with timeout completes successfully
+        let normal_res = docker
+            .exec_command_with_timeout(
+                &cid,
+                vec!["sh", "-c", "echo hello_security"],
+                Some(std::time::Duration::from_secs(5)),
+                None,
+            )
+            .await
+            .expect("Normal command failed");
+        assert_eq!(normal_res.exit_code, 0);
+        assert_eq!(normal_res.stdout.trim(), "hello_security");
+
+        // 2. Test hanging command triggers bounded timeout
+        let start = std::time::Instant::now();
+        let timeout_res = docker
+            .exec_command_with_timeout(
+                &cid,
+                vec!["sleep", "10"],
+                Some(std::time::Duration::from_millis(500)),
+                None,
+            )
+            .await;
+
+        assert!(
+            timeout_res.is_err(),
+            "Hanging command must return Err on timeout"
+        );
+        let err_msg = timeout_res.err().unwrap();
+        assert!(
+            err_msg.contains("timed out"),
+            "Error message must indicate timeout, got: {}",
+            err_msg
+        );
+        assert!(
+            start.elapsed() < std::time::Duration::from_secs(3),
+            "Command must terminate within bounded timeout"
+        );
+
+        // Cleanup
+        let _ = docker.stop_container(&cid).await;
+        let _ = docker.remove_container(&cid).await;
+    }
+
+    #[tokio::test]
+    async fn test_security_cwd_injection_prevention() {
+        let app_state = create_test_app_state();
+        if !app_state.docker.is_available() {
+            println!("Docker daemon not available, skipping CWD injection security test");
+            return;
+        }
+
+        let container_name = "netlab_security_cwd_test";
+        let _ = app_state.docker.stop_container(container_name).await;
+        let _ = app_state.docker.remove_container(container_name).await;
+
+        let (cid, ip) = app_state
+            .docker
+            .start_container(
+                container_name,
+                "ubuntu:24.04",
+                Some(18048),
+                Some(22),
+                vec![],
+                Some(vec!["sleep".to_string(), "infinity".to_string()]),
+                Some("host".to_string()),
+            )
+            .await
+            .expect("Failed to start container for CWD test");
+
+        let vps_id = "vps-security-cwd-node";
+        let lab_id = "lab-security-cwd";
+
+        let audit_lab = Lab {
+            id: lab_id.to_string(),
+            name: "Security CWD Lab".to_string(),
+            description: "Test CWD shell injection prevention".to_string(),
+            status: "Running".to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            components: vec![LabComponent {
+                id: vps_id.to_string(),
+                lab_id: lab_id.to_string(),
+                name: "CWD Test VPS Node".to_string(),
+                component_type: "vps".to_string(),
+                runtime_mode: "docker".to_string(),
+                image: "ubuntu:24.04".to_string(),
+                status: "running".to_string(),
+                container_id: Some(cid.clone()),
+                ip_address: ip,
+                host_port: Some(18048),
+                container_port: Some(22),
+                created_at: chrono::Utc::now().to_rfc3339(),
+            }],
+            routes: vec![],
+        };
+
+        app_state
+            .db
+            .save_lab(&audit_lab)
+            .expect("Failed to save lab");
+
+        // 1. Attempt injection using shell metacharacters in CWD
+        let malicious_cwd = "/root\"; touch /tmp/pwned_by_cwd_injection.txt; cd \"/root";
+        let res = crate::commands::exec_command_internal(
+            &app_state,
+            vps_id.to_string(),
+            "echo execution_done".to_string(),
+            "docker".to_string(),
+            Some(malicious_cwd.to_string()),
+        )
+        .await
+        .expect("Command execution failed");
+
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(res.stdout.trim(), "execution_done");
+
+        // Check if the injected file was created in container
+        let check_injected = app_state
+            .docker
+            .exec_command(&cid, vec!["test", "-f", "/tmp/pwned_by_cwd_injection.txt"])
+            .await
+            .expect("Exec check failed");
+
+        assert_ne!(
+            check_injected.exit_code, 0,
+            "Injected file must NOT exist inside container — injection attempt failed successfully"
+        );
+
+        // 2. Verify legitimate directory change works properly
+        let legitimate_res = crate::commands::exec_command_internal(
+            &app_state,
+            vps_id.to_string(),
+            "pwd".to_string(),
+            "docker".to_string(),
+            Some("/var/log".to_string()),
+        )
+        .await
+        .expect("Legitimate CWD command failed");
+
+        assert_eq!(legitimate_res.exit_code, 0);
+        assert_eq!(legitimate_res.cwd.as_deref(), Some("/var/log"));
+        assert_eq!(legitimate_res.stdout.trim(), "/var/log");
+
+        // Cleanup
+        let _ = app_state.docker.stop_container(&cid).await;
+        let _ = app_state.docker.remove_container(&cid).await;
+        let _ = app_state.db.delete_lab(lab_id);
+    }
 }

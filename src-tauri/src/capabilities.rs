@@ -13,7 +13,12 @@ pub async fn detect_capabilities(gateway_port: u16) -> SystemCapabilities {
     };
 
     // 2. Detect KVM
-    let kvm_available = Path::new("/dev/kvm").exists() && fs::OpenOptions::new().read(true).write(true).open("/dev/kvm").is_ok();
+    let kvm_available = Path::new("/dev/kvm").exists()
+        && fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/kvm")
+            .is_ok();
 
     // 3. Detect System Memory and CPUs
     let cpu_cores = std::thread::available_parallelism()

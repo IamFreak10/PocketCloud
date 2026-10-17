@@ -1,8 +1,8 @@
 # PocketCloud Project Status & Verification Report
 
 **Application Name:** PocketCloud  
-**Current Version:** 0.1.4  
-**Date:** 2026-10-17  
+**Current Version:** 0.1.5  
+**Date:** 2026-10-18  
 **Platform Targets:** Linux (x86_64) & Windows 10/11 (x86_64)  
 **Host Environment:** Ubuntu 24.04.5 LTS (Noble Numbat), AMD Ryzen 7 5700G (16 vCPUs), 16GB RAM  
 **Docker Runtime:** Docker Engine Community 29.8.1 (Operational)  

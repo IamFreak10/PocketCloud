@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 pub struct Simulator {
     filesystems: Mutex<HashMap<String, HashMap<String, String>>>, // component_id -> (filepath -> content)
-    cwds: Mutex<HashMap<String, String>>,                        // component_id -> current_dir
+    cwds: Mutex<HashMap<String, String>>,                         // component_id -> current_dir
 }
 
 impl Simulator {
@@ -19,9 +19,15 @@ impl Simulator {
         let mut fs_map = self.filesystems.lock().unwrap();
         let mut files = HashMap::new();
 
-        files.insert("/etc/hostname".to_string(), format!("netlab-{}", component_id));
+        files.insert(
+            "/etc/hostname".to_string(),
+            format!("netlab-{}", component_id),
+        );
         files.insert("/etc/os-release".to_string(), "NAME=\"Alpine Linux\"\nID=alpine\nVERSION_ID=3.20.0\nPRETTY_NAME=\"Alpine Linux v3.20 (Simulated)\"".to_string());
-        files.insert("/etc/resolv.conf".to_string(), "nameserver 10.99.0.1\nsearch netlab.local".to_string());
+        files.insert(
+            "/etc/resolv.conf".to_string(),
+            "nameserver 10.99.0.1\nsearch netlab.local".to_string(),
+        );
 
         if comp_type == "web" {
             files.insert(
@@ -30,12 +36,16 @@ impl Simulator {
             );
             files.insert(
                 "/etc/nginx/nginx.conf".to_string(),
-                "server {\n    listen 80;\n    server_name localhost;\n    root /var/www/html;\n}".to_string(),
+                "server {\n    listen 80;\n    server_name localhost;\n    root /var/www/html;\n}"
+                    .to_string(),
             );
         }
 
         fs_map.insert(component_id.to_string(), files);
-        self.cwds.lock().unwrap().insert(component_id.to_string(), "/root".to_string());
+        self.cwds
+            .lock()
+            .unwrap()
+            .insert(component_id.to_string(), "/root".to_string());
     }
 
     pub fn exec_command(&self, component_id: &str, cmd: &[&str]) -> ExecResult {
@@ -43,7 +53,12 @@ impl Simulator {
         self.exec_command_with_cwd(component_id, &cmd_str, "/root")
     }
 
-    pub fn exec_command_with_cwd(&self, component_id: &str, command: &str, initial_cwd: &str) -> ExecResult {
+    pub fn exec_command_with_cwd(
+        &self,
+        component_id: &str,
+        command: &str,
+        initial_cwd: &str,
+    ) -> ExecResult {
         let parts: Vec<&str> = command.split_whitespace().collect();
         if parts.is_empty() {
             return ExecResult {
@@ -56,7 +71,9 @@ impl Simulator {
 
         let main_cmd = parts[0];
         let mut cwds = self.cwds.lock().unwrap();
-        let current_dir = cwds.entry(component_id.to_string()).or_insert_with(|| initial_cwd.to_string());
+        let current_dir = cwds
+            .entry(component_id.to_string())
+            .or_insert_with(|| initial_cwd.to_string());
         let mut fs_map = self.filesystems.lock().unwrap();
         let files = fs_map.entry(component_id.to_string()).or_default();
 
@@ -71,7 +88,8 @@ impl Simulator {
                     if current_dir == "/" {
                         "/".to_string()
                     } else {
-                        let mut segments: Vec<&str> = current_dir.split('/').filter(|s| !s.is_empty()).collect();
+                        let mut segments: Vec<&str> =
+                            current_dir.split('/').filter(|s| !s.is_empty()).collect();
                         segments.pop();
                         if segments.is_empty() {
                             "/".to_string()
@@ -117,7 +135,9 @@ impl Simulator {
             },
             "uname" => ExecResult {
                 exit_code: 0,
-                stdout: "Linux ubuntu-24 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 Linux\n".to_string(),
+                stdout:
+                    "Linux ubuntu-24 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 Linux\n"
+                        .to_string(),
                 stderr: String::new(),
                 cwd: Some(current_dir.clone()),
             },
@@ -129,7 +149,11 @@ impl Simulator {
                 } else if current_dir == "/etc" {
                     "hostname  \x1b[01;34mnginx\x1b[0m  os-release  resolv.conf\n".to_string()
                 } else {
-                    let prefix = if current_dir.ends_with('/') { current_dir.clone() } else { format!("{}/", current_dir) };
+                    let prefix = if current_dir.ends_with('/') {
+                        current_dir.clone()
+                    } else {
+                        format!("{}/", current_dir)
+                    };
                     let matching: Vec<String> = files
                         .keys()
                         .filter(|k| k.starts_with(&prefix))
@@ -202,14 +226,12 @@ impl Simulator {
                     cwd: Some(current_dir.clone()),
                 }
             }
-            "mkdir" => {
-                ExecResult {
-                    exit_code: 0,
-                    stdout: String::new(),
-                    stderr: String::new(),
-                    cwd: Some(current_dir.clone()),
-                }
-            }
+            "mkdir" => ExecResult {
+                exit_code: 0,
+                stdout: String::new(),
+                stderr: String::new(),
+                cwd: Some(current_dir.clone()),
+            },
             _ => ExecResult {
                 exit_code: 0,
                 stdout: format!("NetLab [Shell]: Executed '{}' successfully.\n", command),

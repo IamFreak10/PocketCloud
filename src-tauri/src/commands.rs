@@ -691,18 +691,28 @@ pub async fn exec_command_internal(
 
         let normalized_command = command.replace("\r\n", "\n").replace('\r', "\n");
         let script = format!(
-            r#"cd "{}" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
+            r#"target_dir="$1"
+cd "$target_dir" 2>/dev/null || cd /root || cd /; export TERM=xterm-256color; export COLUMNS=80; export PS1=1; [ -f /etc/profile ] && . /etc/profile 2>/dev/null; [ -f /root/.bashrc ] && . /root/.bashrc 2>/dev/null; export NVM_DIR="/root/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null; alias ls='ls --color=always -C'; alias ll='ls -alF --color=always'; alias la='ls -A --color=always'; alias l='ls -CF --color=always'; shopt -s expand_aliases 2>/dev/null || true;
 {}
 __NETLAB_EXIT_CODE=$?
 echo ""
 echo "__NETLAB_CWD__:$(pwd)"
 exit $__NETLAB_EXIT_CODE"#,
-            initial_cwd, normalized_command
+            normalized_command
         );
+
+        let safe_cwd = if initial_cwd.contains('\0')
+            || initial_cwd.contains('\n')
+            || initial_cwd.contains('\r')
+        {
+            "/root".to_string()
+        } else {
+            initial_cwd.clone()
+        };
 
         let mut res = state
             .docker
-            .exec_command(&cid, vec![shell, "-c", &script])
+            .exec_command(&cid, vec![shell, "-c", &script, "netlab-shell", &safe_cwd])
             .await?;
 
         if let Some(pos) = res.stdout.find("__NETLAB_CWD__:") {

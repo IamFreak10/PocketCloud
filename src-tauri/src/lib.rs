@@ -16,8 +16,8 @@ use db::Database;
 use dns::DnsEngine;
 use docker::DockerManager;
 use gateway::HostGateway;
-use simulator::Simulator;
 use qemu::QemuManager;
+use simulator::Simulator;
 use std::sync::Arc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

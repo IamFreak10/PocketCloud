@@ -1,4 +1,5 @@
 use crate::models::ExecResult;
+use bollard::Docker;
 use bollard::container::{
     Config, CreateContainerOptions, InspectContainerOptions, LogsOptions, RemoveContainerOptions,
     StartContainerOptions,
@@ -6,7 +7,6 @@ use bollard::container::{
 use bollard::exec::{CreateExecOptions, StartExecResults};
 use bollard::image::CreateImageOptions;
 use bollard::models::{HostConfig, PortBinding, PortMap};
-use bollard::Docker;
 use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 
@@ -17,7 +17,9 @@ pub struct DockerManager {
 impl DockerManager {
     pub fn new() -> Self {
         if let Ok(client) = Docker::connect_with_local_defaults() {
-            return DockerManager { client: Some(client) };
+            return DockerManager {
+                client: Some(client),
+            };
         }
 
         #[cfg(unix)]
@@ -40,7 +42,9 @@ impl DockerManager {
                         120,
                         bollard::API_DEFAULT_VERSION,
                     ) {
-                        return DockerManager { client: Some(client) };
+                        return DockerManager {
+                            client: Some(client),
+                        };
                     }
                 }
             }
@@ -140,9 +144,13 @@ impl DockerManager {
 
         // 3. Configure Resource Limits (Default: 512MB RAM, 1 CPU quota)
         let host_config = HostConfig {
-            port_bindings: if is_host_net { None } else { Some(port_bindings) },
+            port_bindings: if is_host_net {
+                None
+            } else {
+                Some(port_bindings)
+            },
             memory: Some(512 * 1024 * 1024), // 512 MB
-            nano_cpus: Some(1_000_000_000),   // 1 CPU
+            nano_cpus: Some(1_000_000_000),  // 1 CPU
             network_mode: Some(net_mode.clone()),
             extra_hosts: Some(vec!["ubuntu-24:127.0.0.1".to_string()]),
             ..Default::default()
@@ -154,7 +162,11 @@ impl DockerManager {
             cmd: cmd.clone(),
             working_dir: Some("/root".to_string()),
             env: Some(env),
-            exposed_ports: if is_host_net { None } else { Some(exposed_ports) },
+            exposed_ports: if is_host_net {
+                None
+            } else {
+                Some(exposed_ports)
+            },
             host_config: Some(host_config),
             tty: Some(true),
             open_stdin: Some(true),
@@ -162,11 +174,16 @@ impl DockerManager {
         };
 
         // If container already exists with the same name, reuse and start it to preserve user files and software
-        let container_id = if let Ok(inspect) = docker.inspect_container(name, None::<InspectContainerOptions>).await {
+        let container_id = if let Ok(inspect) = docker
+            .inspect_container(name, None::<InspectContainerOptions>)
+            .await
+        {
             let id = inspect.id.unwrap_or_else(|| name.to_string());
             let is_running = inspect.state.and_then(|s| s.running).unwrap_or(false);
             if !is_running {
-                let _ = docker.start_container(&id, None::<StartContainerOptions<String>>).await;
+                let _ = docker
+                    .start_container(&id, None::<StartContainerOptions<String>>)
+                    .await;
             }
             id
         } else {
@@ -239,13 +256,19 @@ impl DockerManager {
         let Some(docker) = self.client.as_ref() else {
             return false;
         };
-        match docker.inspect_container(container_id, None::<InspectContainerOptions>).await {
+        match docker
+            .inspect_container(container_id, None::<InspectContainerOptions>)
+            .await
+        {
             Ok(inspect) => inspect.state.and_then(|s| s.running).unwrap_or(false),
             Err(_) => false,
         }
     }
 
-    pub async fn inspect_container(&self, container_id: &str) -> Result<bollard::models::ContainerInspectResponse, String> {
+    pub async fn inspect_container(
+        &self,
+        container_id: &str,
+    ) -> Result<bollard::models::ContainerInspectResponse, String> {
         let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
         docker
             .inspect_container(container_id, None::<InspectContainerOptions>)
@@ -253,14 +276,19 @@ impl DockerManager {
             .map_err(|e| format!("Failed to inspect container: {}", e))
     }
 
-    pub async fn ensure_active_container(&self, container_name_or_id: &str) -> Result<String, String> {
+    pub async fn ensure_active_container(
+        &self,
+        container_name_or_id: &str,
+    ) -> Result<String, String> {
         let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
         let inspect = docker
             .inspect_container(container_name_or_id, None::<InspectContainerOptions>)
             .await
             .map_err(|e| format!("Container '{}' not found: {}", container_name_or_id, e))?;
 
-        let id = inspect.id.unwrap_or_else(|| container_name_or_id.to_string());
+        let id = inspect
+            .id
+            .unwrap_or_else(|| container_name_or_id.to_string());
         let is_running = inspect.state.and_then(|s| s.running).unwrap_or(false);
 
         if !is_running {
@@ -274,7 +302,10 @@ impl DockerManager {
     }
 
     pub async fn ping(&self) -> Result<(), String> {
-        let docker = self.client.as_ref().ok_or("Docker client not initialized")?;
+        let docker = self
+            .client
+            .as_ref()
+            .ok_or("Docker client not initialized")?;
         docker
             .ping()
             .await
@@ -304,7 +335,27 @@ impl DockerManager {
             .map_err(|e| format!("Failed to remove container: {}", e))
     }
 
-    pub async fn exec_command(&self, container_id: &str, cmd: Vec<&str>) -> Result<ExecResult, String> {
+    pub async fn exec_command(
+        &self,
+        container_id: &str,
+        cmd: Vec<&str>,
+    ) -> Result<ExecResult, String> {
+        self.exec_command_with_timeout(
+            container_id,
+            cmd,
+            Some(std::time::Duration::from_secs(60)),
+            Some(5 * 1024 * 1024),
+        )
+        .await
+    }
+
+    pub async fn exec_command_with_timeout(
+        &self,
+        container_id: &str,
+        cmd: Vec<&str>,
+        timeout: Option<std::time::Duration>,
+        max_output_bytes: Option<usize>,
+    ) -> Result<ExecResult, String> {
         let docker = self.client.as_ref().ok_or("Docker daemon not available")?;
 
         let exec_create_opts = CreateExecOptions {
@@ -331,18 +382,54 @@ impl DockerManager {
         let mut stderr = String::new();
 
         if let StartExecResults::Attached { mut output, .. } = start_res {
-            while let Some(msg) = output.next().await {
-                if let Ok(log_output) = msg {
-                    match log_output {
-                        bollard::container::LogOutput::StdOut { message } => {
-                            stdout.push_str(&String::from_utf8_lossy(&message));
+            let max_bytes = max_output_bytes.unwrap_or(5 * 1024 * 1024);
+            let mut truncated = false;
+
+            let read_stream = async {
+                while let Some(msg) = output.next().await {
+                    if let Ok(log_output) = msg {
+                        match log_output {
+                            bollard::container::LogOutput::StdOut { message } => {
+                                if stdout.len() + stderr.len() < max_bytes {
+                                    stdout.push_str(&String::from_utf8_lossy(&message));
+                                } else if !truncated {
+                                    truncated = true;
+                                    stdout.push_str(
+                                        "\n[Output truncated: maximum buffer limit exceeded]",
+                                    );
+                                    break;
+                                }
+                            }
+                            bollard::container::LogOutput::StdErr { message } => {
+                                if stdout.len() + stderr.len() < max_bytes {
+                                    stderr.push_str(&String::from_utf8_lossy(&message));
+                                } else if !truncated {
+                                    truncated = true;
+                                    stderr.push_str(
+                                        "\n[Output truncated: maximum buffer limit exceeded]",
+                                    );
+                                    break;
+                                }
+                            }
+                            _ => {}
                         }
-                        bollard::container::LogOutput::StdErr { message } => {
-                            stderr.push_str(&String::from_utf8_lossy(&message));
-                        }
-                        _ => {}
                     }
                 }
+            };
+
+            if let Some(dur) = timeout {
+                match tokio::time::timeout(dur, read_stream).await {
+                    Ok(()) => {}
+                    Err(_) => {
+                        let _ = docker.inspect_exec(&exec_id).await;
+                        return Err(format!(
+                            "Command execution timed out after {}s",
+                            dur.as_secs()
+                        ));
+                    }
+                }
+            } else {
+                read_stream.await;
             }
         }
 
@@ -392,18 +479,7 @@ impl DockerManager {
     ) -> Result<crate::models::SqlExecuteResult, String> {
         let start = std::time::Instant::now();
         // Use psql with tab-separated output for deterministic parsing
-        let cmd = vec![
-            "psql",
-            "-U",
-            user,
-            "-d",
-            db,
-            "-A",
-            "-F",
-            "\t",
-            "-c",
-            query,
-        ];
+        let cmd = vec!["psql", "-U", user, "-d", db, "-A", "-F", "\t", "-c", query];
 
         let res = self.exec_command(container_id, cmd).await?;
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -479,13 +555,14 @@ impl DockerManager {
             .exec_command(container_id, vec!["sh", "-c", &write_cmd])
             .await?;
         if write_res.exit_code != 0 {
-            return Err(format!("Failed to write nginx config: {}", write_res.stderr));
+            return Err(format!(
+                "Failed to write nginx config: {}",
+                write_res.stderr
+            ));
         }
 
         // 2. Validate configuration using nginx -t
-        let test_res = self
-            .exec_command(container_id, vec!["nginx", "-t"])
-            .await?;
+        let test_res = self.exec_command(container_id, vec!["nginx", "-t"]).await?;
         if test_res.exit_code != 0 {
             return Err(format!(
                 "Nginx Syntax Verification Failed (exit code {}):\n{}{}",
@@ -516,7 +593,12 @@ impl DockerManager {
 
         let mut result = Vec::new();
         for img in images {
-            let id = img.id.trim_start_matches("sha256:").chars().take(12).collect::<String>();
+            let id = img
+                .id
+                .trim_start_matches("sha256:")
+                .chars()
+                .take(12)
+                .collect::<String>();
             let size_mb = (img.size as f64) / (1024.0 * 1024.0);
             let created = img.created.to_string();
 
@@ -555,9 +637,7 @@ impl DockerManager {
         let mut filters = HashMap::new();
         filters.insert("name".to_string(), vec!["netlab_".to_string()]);
         let res = docker
-            .prune_containers(Some(bollard::container::PruneContainersOptions {
-                filters,
-            }))
+            .prune_containers(Some(bollard::container::PruneContainersOptions { filters }))
             .await
             .map_err(|e| format!("Failed to prune containers: {}", e))?;
         Ok(res.containers_deleted.unwrap_or_default().len())
