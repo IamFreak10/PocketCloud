@@ -7,8 +7,8 @@ use crate::models::{
     DnsRecord, DockerImageInfo, ExecResult, GatewayRoute, Lab, LabComponent, NetworkProbeResult,
     SqlExecuteResult, SystemCapabilities,
 };
-use crate::simulator::Simulator;
 use crate::qemu::QemuManager;
+use crate::simulator::Simulator;
 use std::sync::Arc;
 use tauri::State;
 use uuid::Uuid;
@@ -89,7 +89,11 @@ pub async fn create_lab(
                 lab_id: lab_id.clone(),
                 name: "Linux VPS Node (Alpine)".to_string(),
                 component_type: "vps".to_string(),
-                runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+                runtime_mode: if is_docker {
+                    "docker".to_string()
+                } else {
+                    "simulated".to_string()
+                },
                 image: "alpine:latest".to_string(),
                 status: "stopped".to_string(),
                 container_id: None,
@@ -104,7 +108,11 @@ pub async fn create_lab(
                 lab_id: lab_id.clone(),
                 name: "Nginx Production Web Server".to_string(),
                 component_type: "web".to_string(),
-                runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+                runtime_mode: if is_docker {
+                    "docker".to_string()
+                } else {
+                    "simulated".to_string()
+                },
                 image: "nginx:alpine".to_string(),
                 status: "stopped".to_string(),
                 container_id: None,
@@ -119,7 +127,11 @@ pub async fn create_lab(
                 lab_id: lab_id.clone(),
                 name: "PostgreSQL 16 Database Server".to_string(),
                 component_type: "database".to_string(),
-                runtime_mode: if is_docker { "docker".to_string() } else { "simulated".to_string() },
+                runtime_mode: if is_docker {
+                    "docker".to_string()
+                } else {
+                    "simulated".to_string()
+                },
                 image: "postgres:alpine".to_string(),
                 status: "stopped".to_string(),
                 container_id: None,
@@ -258,7 +270,10 @@ pub async fn start_component(
     component_id: String,
 ) -> Result<LabComponent, String> {
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-    let lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+    let lab = labs
+        .into_iter()
+        .find(|l| l.id == lab_id)
+        .ok_or("Lab not found")?;
     let mut comp = lab
         .components
         .iter()
@@ -271,7 +286,8 @@ pub async fn start_component(
         // makes the database point at a port different from QEMU's SSH
         // forward and leaves the UI permanently unable to connect.
         let port = if state.qemu.is_running(&comp.id) {
-            comp.host_port.ok_or("Running VM has no recorded SSH port")?
+            comp.host_port
+                .ok_or("Running VM has no recorded SSH port")?
         } else {
             find_available_port(comp.host_port.unwrap_or(18022))
         };
@@ -302,10 +318,16 @@ pub async fn start_component(
                     "bridge".to_string(),
                 )
             }
-            _ => (comp.host_port.map(find_available_port), comp.container_port, "bridge".to_string()),
+            _ => (
+                comp.host_port.map(find_available_port),
+                comp.container_port,
+                "bridge".to_string(),
+            ),
         };
 
-        let actual_image = if comp.component_type == "vps" && (comp.image.contains("ubuntu") || comp.image.is_empty()) {
+        let actual_image = if comp.component_type == "vps"
+            && (comp.image.contains("ubuntu") || comp.image.is_empty())
+        {
             "ubuntu:24.04".to_string()
         } else {
             comp.image.clone()
@@ -348,7 +370,9 @@ pub async fn start_component(
                         "mkdir -p /root/.ssh && echo '{}' >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys",
                         key.trim()
                     );
-                    let _ = docker.exec_command(&cid, vec!["sh", "-c", &inject_cmd]).await;
+                    let _ = docker
+                        .exec_command(&cid, vec!["sh", "-c", &inject_cmd])
+                        .await;
                 }
             });
         }
@@ -360,7 +384,9 @@ pub async fn start_component(
             tokio::spawn(async move {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 let init_sql = "CREATE TABLE IF NOT EXISTS customers (id SERIAL PRIMARY KEY, name TEXT, email TEXT, created_at TIMESTAMPTZ DEFAULT NOW()); INSERT INTO customers (name, email) VALUES ('Acme Corp', 'contact@acme.com'), ('Global Hosting', 'admin@globalhost.net');";
-                let _ = docker.exec_sql_query(&cid, "netlab", "netlab", init_sql).await;
+                let _ = docker
+                    .exec_sql_query(&cid, "netlab", "netlab", init_sql)
+                    .await;
             });
         }
 
@@ -396,7 +422,9 @@ pub async fn start_component(
         return Err("QEMU VM runtime is not available on this host.".to_string());
     } else {
         // Simulated mode
-        state.simulator.init_component(&comp.id, &comp.component_type);
+        state
+            .simulator
+            .init_component(&comp.id, &comp.component_type);
         comp.status = "running".to_string();
         comp.ip_address = Some("10.99.0.2".to_string());
         if comp.host_port.is_none() {
@@ -421,7 +449,10 @@ pub async fn stop_component(
     component_id: String,
 ) -> Result<LabComponent, String> {
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-    let lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+    let lab = labs
+        .into_iter()
+        .find(|l| l.id == lab_id)
+        .ok_or("Lab not found")?;
     let mut comp = lab
         .components
         .iter()
@@ -458,7 +489,10 @@ pub async fn add_component(
     runtime_mode: Option<String>,
 ) -> Result<LabComponent, String> {
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-    let mut lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+    let mut lab = labs
+        .into_iter()
+        .find(|l| l.id == lab_id)
+        .ok_or("Lab not found")?;
 
     let is_docker = state.docker.is_available();
     let comp_id = format!("{}-{}", component_type, &Uuid::new_v4().to_string()[..6]);
@@ -538,7 +572,6 @@ pub async fn add_component(
     Ok(comp)
 }
 
-
 #[tauri::command]
 pub async fn exec_command(
     state: State<'_, AppState>,
@@ -547,9 +580,19 @@ pub async fn exec_command(
     runtime_mode: String,
     cwd: Option<String>,
 ) -> Result<ExecResult, String> {
+    exec_command_internal(&state, component_id, command, runtime_mode, cwd).await
+}
+
+pub async fn exec_command_internal(
+    state: &AppState,
+    component_id: String,
+    command: String,
+    runtime_mode: String,
+    cwd: Option<String>,
+) -> Result<ExecResult, String> {
     let initial_cwd = cwd.unwrap_or_else(|| "/root".to_string());
 
-    // 1. Resolve component from database
+    // 1. Resolve component from database using stable application VPS ID
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
     let mut resolved: Option<(Lab, usize)> = None;
 
@@ -564,7 +607,7 @@ pub async fn exec_command(
         }
     }
 
-    let (mut lab, pos) = match resolved {
+    let (lab, pos) = match resolved {
         Some(val) => val,
         None => {
             return Err(format!(
@@ -600,63 +643,48 @@ pub async fn exec_command(
             return Err("Linux runtime unavailable — configure a supported container engine to create a real Linux environment.".to_string());
         }
 
-        let container_name = format!("netlab_{}_{}", lab.id, comp.id);
+        let cid = match &comp.container_id {
+            Some(id) if !id.trim().is_empty() => id.clone(),
+            _ => {
+                return Err(format!(
+                    "Runtime mapping missing for VPS '{}'. Container has not been created.",
+                    comp.id
+                ));
+            }
+        };
+
+        // Inspect actual Docker container to verify existence and running state
+        let inspect = state.docker.inspect_container(&cid).await.map_err(|e| {
+            format!(
+                "Container '{}' not found in Docker Engine. The container may have been removed: {}",
+                cid, e
+            )
+        })?;
+
+        let is_running = inspect
+            .state
+            .as_ref()
+            .and_then(|s| s.running)
+            .unwrap_or(false);
+
+        if !is_running {
+            let status_str = inspect
+                .state
+                .as_ref()
+                .and_then(|s| s.status.as_ref())
+                .map(|s| format!("{:?}", s).to_lowercase())
+                .unwrap_or_else(|| "stopped".to_string());
+            return Err(format!(
+                "Container '{}' is stopped (state: {}). Please start the VPS before executing commands.",
+                cid, status_str
+            ));
+        }
+
         let actual_image = if comp.image.contains("ubuntu") || comp.component_type == "vps" {
             "ubuntu:24.04".to_string()
         } else {
             comp.image.clone()
         };
-
-        // Ensure container is running and resolve actual runtime ID
-        let cid = if let Some(ref existing_cid) = comp.container_id {
-            match state.docker.ensure_active_container(existing_cid).await {
-                Ok(id) => id,
-                Err(_) => match state.docker.ensure_active_container(&container_name).await {
-                    Ok(id) => id,
-                    Err(_) => {
-                        let host_port_opt = comp.host_port.map(find_available_port);
-                        let (new_cid, new_ip) = state
-                            .docker
-                            .start_container(
-                                &container_name,
-                                &actual_image,
-                                host_port_opt,
-                                comp.container_port,
-                                vec!["NETLAB=true".to_string()],
-                                Some(vec!["sleep".to_string(), "infinity".to_string()]),
-                                Some("bridge".to_string()),
-                            )
-                            .await?;
-                        lab.components[pos].ip_address = new_ip;
-                        new_cid
-                    }
-                },
-            }
-        } else {
-            let host_port_opt = comp.host_port.map(find_available_port);
-            let (new_cid, new_ip) = state
-                .docker
-                .start_container(
-                    &container_name,
-                    &actual_image,
-                    host_port_opt,
-                    comp.container_port,
-                    vec!["NETLAB=true".to_string()],
-                    Some(vec!["sleep".to_string(), "infinity".to_string()]),
-                    Some("bridge".to_string()),
-                )
-                .await?;
-            lab.components[pos].ip_address = new_ip;
-            new_cid
-        };
-
-        if lab.components[pos].container_id.as_deref() != Some(&cid)
-            || lab.components[pos].status != "running"
-        {
-            lab.components[pos].container_id = Some(cid.clone());
-            lab.components[pos].status = "running".to_string();
-            let _ = state.db.save_lab(&lab);
-        }
 
         let is_ubuntu = actual_image.contains("ubuntu");
         let shell = if is_ubuntu { "bash" } else { "sh" };
@@ -695,7 +723,9 @@ exit $__NETLAB_EXIT_CODE"#,
         return Err("Linux runtime unavailable — configure a supported container engine to create a real Linux environment.".to_string());
     }
 
-    Ok(state.simulator.exec_command_with_cwd(&comp.id, &command, &initial_cwd))
+    Ok(state
+        .simulator
+        .exec_command_with_cwd(&comp.id, &command, &initial_cwd))
 }
 
 #[tauri::command]
@@ -732,7 +762,10 @@ pub async fn apply_nginx_config(
             }
         }
     }
-    Err("Active web server container not found. Please start the Nginx component first.".to_string())
+    Err(
+        "Active web server container not found. Please start the Nginx component first."
+            .to_string(),
+    )
 }
 
 #[tauri::command]
@@ -810,7 +843,10 @@ pub async fn delete_component(
     component_id: String,
 ) -> Result<Lab, String> {
     let labs = state.db.list_labs().map_err(|e| e.to_string())?;
-    let mut lab = labs.into_iter().find(|l| l.id == lab_id).ok_or("Lab not found")?;
+    let mut lab = labs
+        .into_iter()
+        .find(|l| l.id == lab_id)
+        .ok_or("Lab not found")?;
 
     if let Some(pos) = lab.components.iter().position(|c| c.id == component_id) {
         let comp = &lab.components[pos];
@@ -848,8 +884,6 @@ pub async fn delete_docker_image(
 }
 
 #[tauri::command]
-pub async fn prune_stopped_containers(
-    state: State<'_, AppState>,
-) -> Result<usize, String> {
+pub async fn prune_stopped_containers(state: State<'_, AppState>) -> Result<usize, String> {
     state.docker.prune_stopped_containers().await
 }
