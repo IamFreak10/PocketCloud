@@ -1,5 +1,6 @@
 import React from 'react';
 import { Cpu, HardDrive, Globe, ShieldCheck, Box, Sparkles, ExternalLink } from 'lucide-react';
+import { APP_VERSION } from '../version';
 import { SystemCapabilities } from '../types';
 
 interface HeaderProps {
@@ -32,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ capabilities }) => {
             {/* Version Badge */}
             <span className="retro-badge bg-[#C7F9CC] text-stone-900 text-[10px] font-black border border-stone-900 shadow-[1px_1px_0px_#18181B] self-center">
               <Sparkles className="w-2.5 h-2.5 text-emerald-700" />
-              v0.1.0
+              v{APP_VERSION}
             </span>
           </div>
         </div>

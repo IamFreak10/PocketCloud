@@ -24,8 +24,8 @@ jobs:
           prerelease: false
           body_path: PROJECT_STATUS.md
           files: |
-            dist-windows/PocketCloud-Setup-0.1.0.exe
-            dist-windows/PocketCloud-0.1.0.msi
+            dist-windows/PocketCloud-Setup-*.exe
+            dist-windows/PocketCloud-*.msi
             dist-windows/PocketCloud.exe
-            dist-linux/PocketCloud_0.1.0_amd64.deb
-            dist-linux/PocketCloud-0.1.0-1.x86_64.rpm
+            dist-linux/PocketCloud_*_amd64.deb
+            dist-linux/PocketCloud-*-1.x86_64.rpm

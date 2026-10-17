@@ -3,7 +3,7 @@
 !include "LogicLib.nsh"
 
 Name "PocketCloud"
-OutFile "PocketCloud-Setup-0.1.0.exe"
+OutFile "PocketCloud-Setup-0.1.3.exe"
 InstallDir "$PROGRAMFILES64\PocketCloud"
 InstallDirRegKey HKLM "Software\PocketCloud" "Install_Dir"
 RequestExecutionLevel admin
@@ -69,7 +69,7 @@ Section "PocketCloud Core" SecCore
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "DisplayName" "PocketCloud — Zero-Cost Private Cloud & Full VPS Sandbox"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "DisplayIcon" '"$INSTDIR\icon.ico"'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "DisplayVersion" "0.1.0"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "DisplayVersion" "0.1.3"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "Publisher" "PocketCloud Team"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PocketCloud" "NoRepair" 1

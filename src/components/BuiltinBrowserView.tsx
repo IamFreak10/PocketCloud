@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Lab, NetworkProbeResult } from '../types';
 import { api } from '../services/api';
+import { APP_VERSION } from '../version';
 
 interface BuiltinBrowserViewProps {
   currentLab: Lab | null;
@@ -87,7 +88,7 @@ export const BuiltinBrowserView: React.FC<BuiltinBrowserViewProps> = ({
         },
         {
           type: 'system',
-          text: '● PocketCloud Secure SSH Terminal v0.1.0 — Station 1 (London)',
+          text: `● PocketCloud Secure SSH Terminal v${APP_VERSION} — Station 1 (London)`,
           time: 'BOOT',
         },
         {

@@ -16,6 +16,7 @@ import {
   Heart,
   Sparkles,
 } from 'lucide-react';
+import { APP_VERSION } from '../version';
 
 export type NavTab =
   | 'dashboard'
@@ -72,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, activ
                 <span className="text-[10px] font-mono font-bold text-stone-600">Local Sandbox VPS</span>
               </div>
               <span className="text-[9px] font-mono font-black px-1.5 py-0.5 bg-[#FEF08A] text-stone-900 rounded border border-stone-900 shadow-[1px_1px_0px_#18181B]">
-                v0.1.0
+                v{APP_VERSION}
               </span>
             </div>
           </div>

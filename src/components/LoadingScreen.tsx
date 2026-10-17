@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { SystemCapabilities } from '../types';
+import { APP_VERSION } from '../version';
 
 interface LoadingScreenProps {
   capabilities: SystemCapabilities | null;
@@ -89,7 +90,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     setHasStarted(true);
 
     const runDiagnostics = async () => {
-      addLog('PocketCloud v0.1.0 boot sequence started...');
+      addLog(`PocketCloud v${APP_VERSION} boot sequence started...`);
       addLog('Verifying system hardware and environment runtime...');
 
       // Step 1: System
@@ -202,7 +203,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono font-bold text-stone-600">PocketCloud v0.1.0</span>
+          <span className="text-[11px] font-mono font-bold text-stone-600">PocketCloud v{APP_VERSION}</span>
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-stone-900 animate-pulse" />
         </div>
       </div>
