@@ -1,7 +1,7 @@
 # PocketCloud Project Status & Verification Report
 
 **Application Name:** PocketCloud  
-**Current Version:** 0.1.0-alpha  
+**Current Version:** 0.1.4  
 **Date:** 2026-10-17  
 **Platform Targets:** Linux (x86_64) & Windows 10/11 (x86_64)  
 **Host Environment:** Ubuntu 24.04.5 LTS (Noble Numbat), AMD Ryzen 7 5700G (16 vCPUs), 16GB RAM  
@@ -18,6 +18,7 @@ PocketCloud is an offline-first, zero-cost private cloud sandbox that spins up a
 | Module / Component | Target | Status | Verifiable Evidence |
 |--------------------|--------|--------|---------------------|
 | **Brand Identity** | PocketCloud Logo & Favicon | **Verified** | Custom logo integrated in `Header.tsx`, `index.html` favicon, and multi-size Windows icon `icon.ico` / Tauri icons (`512x512`, `128x128`, `32x32`). |
+| **Keep-Alive View Engine** | Zero-Loss Tab State Preservation | **Verified** | Persistent tab mounting in `App.tsx` prevents DOM destruction on navigation; `BuiltinBrowserView` syncs stations & active URLs to `localStorage`; xterm.js auto-fits via `ResizeObserver`. |
 | **UI/UX Design System** | Retro Pastel Y2K OS Aesthetic | **Verified** | Cream `#FAF7EE` canvas, 🔴 🟡 🟢 3-dot window titlebars, 2px solid borders `border-2 border-stone-900`, 4px drop shadows `shadow-[4px_4px_0px_#18181B]`. Applied to all inner views (Labs, VPS Manager, DNS, Web Servers, Databases, Diagnostics, Gateway, Missions, Settings). |
 | **Linux Console** | Authentic Ubuntu Terminal | **Verified** | Dark aubergine Linux console (`#300a24` / `#0c1017`) preserved for high-contrast CLI work inside retro pastel window frame. |
 | **Clean VPS Core** | Minimal Ubuntu 24.04.5 LTS | **Verified** | Built with `docker/ubuntu-vps/Dockerfile`. Clean slate with OpenSSH server and sudo. Verified: `which nginx -> No Nginx`, `which node -> No Node`, `whoami -> root`, `pwd -> /root`. |
@@ -25,7 +26,7 @@ PocketCloud is an offline-first, zero-cost private cloud sandbox that spins up a
 | **Authoritative DNS** | In-Memory Virtual Zone | **Verified** | Maps `.test` domains (`shop.test -> 127.0.0.1:18081`). Verified in `test_dns_resolution_and_probe` and `test_real_nginx_virtual_domain_and_gateway_e2e`. Unmapped domains return 404 NXDOMAIN. |
 | **Host-Browser Gateway** | Loopback Proxy (18080) | **Verified** | High-performance Axum HTTP proxy forwarder. RFC 6761 compliant, forwards requested domain `Host` headers directly to target container. |
 | **Automated Tests** | Backend Rust Test Suite | **100% Passed** | `cargo test` reports **9 passed; 0 failed; 0 ignored** in 1.77s. |
-| **Frontend Compilation** | Vite + TypeScript | **100% Passed** | `npm run build` succeeds with 0 TypeScript/CSS errors in 528ms. |
+| **Frontend Compilation** | Vite + TypeScript | **100% Passed** | `npm run build` succeeds with 0 TypeScript/CSS errors. |
 
 ---
 

@@ -202,7 +202,7 @@ export function App() {
 
         {/* Dynamic Center Viewport */}
         <main className="flex-1 overflow-hidden relative bg-[#FAF7EE]">
-          {currentTab === 'dashboard' && (
+          <div className={currentTab === 'dashboard' ? 'h-full flex flex-col overflow-y-auto' : 'hidden'}>
             <DashboardView
               labs={labs}
               capabilities={capabilities}
@@ -227,9 +227,9 @@ export function App() {
                 }
               }}
             />
-          )}
+          </div>
 
-          {currentTab === 'labs' && (
+          <div className={currentTab === 'labs' ? 'h-full flex flex-col' : 'hidden'}>
             <LabsView
               labs={labs}
               currentLab={currentLab}
@@ -241,19 +241,18 @@ export function App() {
               onOpenTerminal={handleOpenTerminalForComponent}
               onViewLogs={handleOpenTerminalForComponent}
             />
-          )}
+          </div>
 
-          {currentTab === 'designer' && (
-            <div className="p-4 h-full">
-              <TopologyView
-                components={currentLab?.components || []}
-                onSelectComponent={setSelectedComponentId}
-                onOpenTerminal={handleOpenTerminalForComponent}
-              />
-            </div>
-          )}
+          <div className={currentTab === 'designer' ? 'p-4 h-full' : 'hidden'}>
+            <TopologyView
+              components={currentLab?.components || []}
+              onSelectComponent={setSelectedComponentId}
+              onOpenTerminal={handleOpenTerminalForComponent}
+            />
+          </div>
 
-          {currentTab === 'terminal' && (
+          {/* Persistent Keep-Alive Terminal View */}
+          <div className={currentTab === 'terminal' ? 'h-full flex flex-col' : 'hidden'}>
             <VpsManagerView
               components={currentLab?.components || []}
               selectedComponentId={selectedComponentId}
@@ -261,34 +260,35 @@ export function App() {
               onStartComponent={handleStartComponent}
               onStopComponent={handleStopComponent}
             />
-          )}
+          </div>
 
-          {currentTab === 'browser' && (
+          {/* Persistent Keep-Alive Internet Simulator View */}
+          <div className={currentTab === 'browser' ? 'h-full flex flex-col' : 'hidden'}>
             <BuiltinBrowserView
               currentLab={currentLab}
               gatewayPort={capabilities?.gateway_port || 18080}
             />
-          )}
+          </div>
 
           {currentTab === 'web' && <WebServersView currentLab={currentLab} />}
 
-          {currentTab === 'dns' && (
+          <div className={currentTab === 'dns' ? 'h-full flex flex-col' : 'hidden'}>
             <DnsManagerView
               currentLab={currentLab}
               gatewayPort={capabilities?.gateway_port || 18080}
             />
-          )}
+          </div>
 
           {currentTab === 'databases' && <DatabasesView currentLab={currentLab} />}
 
           {currentTab === 'diagnostics' && <NetworkTesterView />}
 
-          {currentTab === 'gateway' && (
+          <div className={currentTab === 'gateway' ? 'h-full flex flex-col' : 'hidden'}>
             <GatewayView
               currentLab={currentLab}
               gatewayPort={capabilities?.gateway_port || 18080}
             />
-          )}
+          </div>
 
           {currentTab === 'missions' && (
             <MissionsView

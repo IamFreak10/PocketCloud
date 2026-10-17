@@ -91,3 +91,21 @@
   - Tested bash execution of multi-line export and test commands: completed with exit code 0.
   - Verified full test suite (`cargo test -- --nocapture`) passes 9/9 tests.
   - Verified frontend build passes with 0 errors.
+
+### Defect 9: React Tab Unmounting Causing Complete State Reset (Terminal & Browser State Lost)
+- **Failure:** Switching between "Ubuntu VPS Terminal" and "Internet Simulator" caused the Simulator to wipe the typed URL (`http://127.0.0.1:3000/api/status`) and reset back to `http://shop.test`. Switching away from Terminal also cleared the terminal output and history.
+- **Root Cause:** In `src/App.tsx`, tab views were rendered with conditional mounting (`{currentTab === 'terminal' && <VpsManagerView />}`). Changing tabs unmounted the component, destroying all React states, running processes in split view, station tabs, and iframe DOM.
+- **Fix:**
+  - In `src/App.tsx`, implemented a **Keep-Alive View Hierarchy**: stateful tabs (`terminal`, `browser`, `designer`, `dns`, `labs`, `dashboard`) remain persistently mounted in DOM and toggle visibility via CSS `hidden` (`display: none`).
+  - In `src/components/BuiltinBrowserView.tsx`, integrated persistent `localStorage` synchronization for `stations` and `activeStationId`. On startup or reload, previous stations, custom ports, and browsing targets are restored automatically.
+- **Verification:**
+  - Verified that typing a URL in the browser and switching to Terminal and back preserves the URL, station tabs, and loaded response without resetting.
+  - Verified `localStorage` stores and restores state across page reloads.
+
+### Defect 10: xterm.js Canvas Breakdown on Tab Visibility Toggle
+- **Failure:** When switching to the Terminal tab after being hidden, xterm.js line wraps broke and the cursor was misaligned because `fitAddon.fit()` only listened to `window.onresize`.
+- **Root Cause:** Container DOM size changes caused by tab toggles or panel resizing do not fire the global `window.onresize` event.
+- **Fix:**
+  - In `src/components/TerminalView.tsx`, wrapped `terminalRef.current` with a native `ResizeObserver` that automatically calls `fitAddon.current?.fit()` whenever the element transitions from `display: none` to visible or dimensions change.
+- **Verification:**
+  - Tested switching from hidden to visible; xterm immediately recalibrates rows and columns to match container size.

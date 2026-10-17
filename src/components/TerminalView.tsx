@@ -468,10 +468,27 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
     }
 
     const handleResize = () => {
-      fitAddon.current?.fit();
+      try {
+        fitAddon.current?.fit();
+      } catch {
+        // ignore detached DOM errors
+      }
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    // ResizeObserver ensures xterm fits whenever the tab is unhidden or resized
+    let resizeObserver: ResizeObserver | null = null;
+    if (terminalRef.current && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
   }, [activeComp?.id]);
 
   const handleQuickCommand = (cmd: string) => {

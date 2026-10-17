@@ -65,8 +65,7 @@ export const BuiltinBrowserView: React.FC<BuiltinBrowserViewProps> = ({
   );
   const defaultVpsId = vpsComponents[0]?.id || currentLab?.components[0]?.id || 'vps-node';
 
-  // Multi-tab stations state with realistic simulated edge clients
-  const [stations, setStations] = useState<ClientStation[]>([
+  const defaultInitialStations: ClientStation[] = [
     {
       id: 'station-1',
       name: 'Client Station 1',
@@ -139,9 +138,42 @@ export const BuiltinBrowserView: React.FC<BuiltinBrowserViewProps> = ({
       cmdHistory: [],
       cmdHistoryIndex: -1,
     },
-  ]);
+  ];
 
-  const [activeStationId, setActiveStationId] = useState<string>('station-1');
+  // Multi-tab stations state with realistic simulated edge clients, restored from localStorage
+  const [stations, setStations] = useState<ClientStation[]>(() => {
+    try {
+      const saved = localStorage.getItem('pocketcloud_browser_stations');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore parse errors and fallback
+    }
+    return defaultInitialStations;
+  });
+
+  const [activeStationId, setActiveStationId] = useState<string>(() => {
+    return localStorage.getItem('pocketcloud_browser_active_station') || 'station-1';
+  });
+
+  // Keep stations and active tab persistently synced in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('pocketcloud_browser_stations', JSON.stringify(stations));
+    } catch {
+      // ignore quota errors
+    }
+  }, [stations]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pocketcloud_browser_active_station', activeStationId);
+    } catch {
+      // ignore quota errors
+    }
+  }, [activeStationId]);
   const [probeResult, setProbeResult] = useState<NetworkProbeResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedLog, setCopiedLog] = useState(false);
