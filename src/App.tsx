@@ -339,13 +339,15 @@ export function App() {
             />
           </div>
 
-          <div className={currentTab === 'designer' ? 'p-4 h-full' : 'hidden'}>
-            <TopologyView
-              components={currentLab?.components || []}
-              onSelectComponent={setSelectedComponentId}
-              onOpenTerminal={handleOpenTerminalForComponent}
-            />
-          </div>
+          {currentTab === 'designer' && (
+            <div className="h-full flex flex-col">
+              <TopologyView
+                components={currentLab?.components || []}
+                onSelectComponent={setSelectedComponentId}
+                onOpenTerminal={handleOpenTerminalForComponent}
+              />
+            </div>
+          )}
 
           {/* Persistent Keep-Alive Terminal View */}
           <div className={currentTab === 'terminal' ? 'h-full flex flex-col' : 'hidden'}>
