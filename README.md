@@ -4,8 +4,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb?logo=react&logoColor=black)](https://react.dev/)
 [![Docker Engine](https://img.shields.io/badge/Docker-Engine-2496ed?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT Sarcastic](https://img.shields.io/badge/License-MIT_Sarcastic-green.svg)](LICENSE)
 
 **PocketCloud** is an ultra-fast, lightweight, desktop-native cloud sandbox and DevOps laboratory built with **Tauri v2**, **Rust**, and **React 19**. It enables developers, DevOps engineers, and system architects to spin up full **Ubuntu 24.04 LTS VPS instances**, orchestrate isolated microservices, configure real reverse proxies and authoritative DNS networks, and inspect traffic—all locally on their workstations with zero cloud costs.
 
@@ -370,4 +369,6 @@ We love contributions! Whether you're fixing a bug, adding new software store pa
 
 ## 🛡️ License
 
-This project is licensed under the [MIT License](LICENSE). Built with ❤️ by [IamFreak10](https://github.com/IamFreak10).
+This project is open-source and proudly licensed under the **[MIT Sarcastic License](LICENSE)** (The *"Do Whatever, Just Don't Blame Us"* Edition). 
+
+You are free to use, modify, distribute, and conquer local cloud infrastructure without commercial strings attached. Built with ❤️ by [IamFreak10](https://github.com/IamFreak10).
